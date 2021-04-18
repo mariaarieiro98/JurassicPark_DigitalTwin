@@ -1,0 +1,5 @@
+{
+    "_4diacLib": "./4diac-lib",
+    "functionBlocksFolder": "./public/function-blocks",
+    "functionBlocksBackupFolder": "./public/function-blocks"
+}

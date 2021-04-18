@@ -1,0 +1,29 @@
+@keyframes arrow-up {
+    0% {
+        transform: rotate(180deg);
+    }
+    100% {
+        transform: rotate(0deg);
+    }
+}
+
+@keyframes arrow-down {
+    0% {
+        transform: rotate(-180deg);
+    }
+    100% {
+        transform: rotate(0deg);
+    }
+}
+
+.arrow-down {
+    animation-name: arrow-down;
+    animation-duration: 0.3s;
+    animation-iteration-count: 1;
+}
+
+.arrow-up {
+    animation-name: arrow-up;
+    animation-duration: 0.3s;
+    animation-iteration-count: 1;
+}

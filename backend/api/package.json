@@ -1,0 +1,51 @@
+{
+  "name": "jurassicparkbackend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test-local": "export APP_PORT=9002 APP_HOST=localhost MYSQL_DATABASE_HOST=localhost MYSQL_DATABASE_PWD=jurassic2020 MYSQL_DATABASE_NAME=jurassic_park MYSQL_DATABASE_PORT=3406 MYSQL_DATABASE_USER=jurassic && npm test",
+    "test": "jest --coverage",
+    "tsc": "./node_modules/.bin/tsc",
+    "start": "nodemon dist/index.js",
+    "testLinter": "eslint src --ext ts",
+    "pm2": "pm2-runtime dist/index.js"
+  },
+  "author": "JP Furriel",
+  "license": "ISC",
+  "devDependencies": {
+    "@babel/core": "^7.13.10",
+    "@babel/preset-env": "^7.13.10",
+    "@babel/preset-typescript": "^7.13.0",
+    "@types/express": "^4.17.11",
+    "@types/jest": "^26.0.20",
+    "@types/moment-timezone": "^0.5.13",
+    "@types/mysql": "^2.15.18",
+    "@types/node": "^14.14.34",
+    "@types/node-fetch": "^2.5.8",
+    "@types/serve-static": "^1.13.9",
+    "@types/supertest": "^2.0.10",
+    "@types/url-parse": "^1.4.3",
+    "@types/xml-js": "^1.0.0",
+    "@typescript-eslint/parser": "^4.17.0",
+    "axios": "^0.21.1",
+    "babel-jest": "^26.6.3",
+    "eslint": "^7.22.0",
+    "jest": "^26.6.3",
+    "nodemon": "^2.0.7",
+    "ts-jest": "^26.5.3"
+  },
+  "dependencies": {
+    "@types/socket.io": "^2.1.13",
+    "express": "^4.17.1",
+    "moment-timezone": "^0.5.33",
+    "mysql2": "^2.2.5",
+    "node-fetch": "^2.6.1",
+    "node-opcua": "^2.5.8",
+    "serve-static": "^1.14.1",
+    "socket.io": "^4.0.0",
+    "typescript": "^4.2.3",
+    "url-parse": "^1.5.1",
+    "xml-js": "^1.6.11"
+  }
+}

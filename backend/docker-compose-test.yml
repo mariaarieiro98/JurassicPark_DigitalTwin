@@ -1,0 +1,97 @@
+version: "3.5"
+services: 
+
+  # broker:
+  #   # network_mode: host
+  #   image: eclipse-mosquitto:latest
+  #   container_name: broker
+  #   ports:
+  #     - 1883:1883
+  #     - 9001:9001
+
+  dinasore1:
+    # network_mode: host
+    build: ./
+    container_name: dinasore1
+    command: python core/main.py -a dinasore1 -p 61499 -u 4841 -l ERROR -m 5 20
+    # tty: true
+    ports:
+      - 61491:61499
+      - 4841:4841
+    volumes: 
+      ./:./
+
+  dinasore2:
+    # network_mode: host
+    build: ./
+    container_name: dinasore2
+    command: python core/main.py -a dinasore2 -p 61499 -u 4840 -l ERROR -m 5 20
+    # tty: true
+    ports:
+      - 61492:61499
+      - 4842:4840
+
+
+  # influx:
+  #   image: influxdb:latest
+  #   container_name: influx
+  #   environment:
+  #     - INFLUXDB_DB=dinasore_hands_on
+  #     - INFLUXDB_ADMIN_USER=admin
+  #     - INFLUXDB_ADMIN_PASSWORD=admin
+  #     - INFLUXDB_HTTP_AUTH_ENABLED=true
+  #     - INFLUXDB_USER=dinasore
+  #     - INFLUXDB_USER_PASSWORD=dinasore_passw
+  #   ports:
+  #     - 8086:8086
+
+  # grafana:
+  #   # network_mode: host
+  #   image: grafana/grafana:latest
+  #   container_name: grafana
+  #   ports:
+  #     - 5000:3000
+
+  t_database:
+    container_name: t_database
+    build: ./database
+    environment:
+      - MYSQL_ROOT_PASSWORD=root-jurassic
+    depends_on: 
+      - t_api
+    networks: 
+      - test
+
+  t_api:
+    build: ./api
+    container_name: t_api
+    environment:
+      - APP_PORT=3001
+      - NODE_ENV=development
+      - MYSQL_DATABASE_HOST=t_database
+      - MYSQL_DATABASE_PWD=jurassic2020
+      - MYSQL_DATABASE_NAME=jurassic_park
+      - MYSQL_DATABASE_PORT=3306
+      - MYSQL_DATABASE_USER=jurassic
+    command: "sh wait-for.sh -t 180 t_database:33060 -- npm test"
+    volumes:
+      - ./api/node_modules:/opt/api/node_modules
+      - ./api/dist:/opt/api/dist
+      - ./api/src:/opt/api/src
+      - ./api/public:/opt/api/public
+      - ./api/package.json:/opt/api/package.json
+      - ./api/package-lock.json:/opt/api/package-lock.json
+      - ./api/coverage:/opt/api/coverage
+      - ./api/jest.config.js:/opt/api/jest.config.js
+      - ./api/tsconfig.json:/opt/api/tsconfig.json
+      - ./api/babel.config.js:/opt/api/babel.config.js
+      - ./api/wait-for.sh:/opt/api/wait-for.sh
+    networks: 
+      - test
+    ports:
+      - 9003:3001
+
+networks: 
+  test:
+    name: test
+

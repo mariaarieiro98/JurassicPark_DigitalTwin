@@ -1,0 +1,2 @@
+[2021-04-18 13:12:30,613][ERROR][MainThread] can not find the self definition file
+[2021-04-18 13:12:30,614][ERROR][MainThread] [Errno 2] No such file or directory: '/usr/src/dinasore-ua/resources/data_model.xml'
