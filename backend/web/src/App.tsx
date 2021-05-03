@@ -8,7 +8,7 @@ import { NewFunctionBlock } from './components/FunctionBlocks/FunctionBlock/NewF
 import { EditFunctionBlock } from './components/FunctionBlocks/FunctionBlock/EditFunctionBlock'
 import { SmartComponentDetail } from './components/SmartComponents/SmartComponent/SmartComponent'
 import { FunctionBlockCategoryList } from './components/FunctionBlockCategories/List/List'
-import { functionBlockReducer, marketplaceOnlineStateReducer, functionBlockCategoryReducer, functionalityReducer, digitalTwinReducer, associatedSmartComponentReducer, smartComponentReducer } from './redux/reducers'
+import { functionBlockReducer, marketplaceOnlineStateReducer, functionBlockCategoryReducer, functionalityReducer, digitalTwinReducer, associatedSmartComponentReducer, smartComponentReducer, monitoredVariableReducer, monitoredEventReducer } from './redux/reducers'
 import { Store, useCreateStore, useStore } from './components/templates/Store/Store'
 import { SmartComponentList } from './components/SmartComponents/List/List'
 import { useMountEffect } from './utils/main'
@@ -40,6 +40,8 @@ export enum AVAILABLE_STORES {
   digitalTwins = 'digitalTwins',
   smartComponents = 'smartComponents',
   associatedSmartComponents = 'associatedSmartComponents',
+  monitoredVariables = 'monitoredVariables',
+  monitoredEvents = 'monitoredEvents',
 }
 
 const App = () : React.ReactElement => {
@@ -51,7 +53,9 @@ const App = () : React.ReactElement => {
     [AVAILABLE_STORES.functionalities] : useCreateStore({reducer: functionalityReducer, initialState: []}),
     [AVAILABLE_STORES.digitalTwins] : useCreateStore({reducer: digitalTwinReducer, initialState: []}),
     [AVAILABLE_STORES.smartComponents] : useCreateStore({reducer: smartComponentReducer, initialState: []}),
-    [AVAILABLE_STORES.associatedSmartComponents] : useCreateStore({reducer: associatedSmartComponentReducer, initialState: []})
+    [AVAILABLE_STORES.associatedSmartComponents] : useCreateStore({reducer: associatedSmartComponentReducer, initialState: []}),
+    [AVAILABLE_STORES.monitoredVariables] : useCreateStore({reducer: monitoredVariableReducer, initialState: []}),
+    [AVAILABLE_STORES.monitoredEvents] : useCreateStore({reducer: monitoredEventReducer, initialState: []})
   }
 
   return (

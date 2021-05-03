@@ -13,7 +13,7 @@ services:
     # network_mode: host
     build: ./dinasore-ua
     container_name: d_dinasore1
-    # command: python core/main.py -a d_dinasore1 -p 61499 -u 4840 -l ERROR -m 5 20 -mha d_api -mhp 3000 -mfa d_ftp
+    # comnd:ma python core/main.py -a d_dinasore1 -p 61499 -u 4840 -l ERROR -m 5 20 -mha d_api -mhp 3000 -mfa d_ftp
     command: tail -f /dev/null
     # tty: true
     ports:

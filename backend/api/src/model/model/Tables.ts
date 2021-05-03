@@ -13,6 +13,9 @@ export const Tables = {
     externalDependency: 'ExternalDependency',
     functionBlockExternalDependency: 'FunctionBlockExternalDependency',
     functionality: 'Functionality',
+    associatedSmartComponent: 'AssociatedSmartComponent',
     digitalTwin: 'DigitalTwin',
+    monitoredVariable: 'MonitoredVariable',
+    monitoredEvent: 'MonitoredEvent',
 }
 

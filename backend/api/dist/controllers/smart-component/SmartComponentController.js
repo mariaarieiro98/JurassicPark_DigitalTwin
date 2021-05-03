@@ -13,12 +13,19 @@ const opcuaClient_1 = require("./opcuaClient");
 const index_1 = require("../../index");
 const functionBlockMainController_1 = require("../function-block/functionBlockMainController");
 const request_1 = require("../../utils/request");
+const digitalTwinMainController_1 = require("../digital-twin/digitalTwinMainController");
 class SmartComponentController {
     constructor(address, port, id, name, type) {
         this.initializer = {
             data: () => {
                 return this.data;
             }
+        };
+        this.variable = {
+            data: () => {
+                return this.data;
+            },
+            sendVariableToServer: (variable) => void {}
         };
         this.setConnected = () => {
             this.data.scState = 'connected';
@@ -60,9 +67,13 @@ class SmartComponentController {
         this.notifyClientFBIUpdated = () => {
             index_1.socketEngine.sendMessageToClient([SmartComponentController.BASE_NAME_SPACE, this.namespace], SmartComponentController.EDITED_FBI_EVENT, this.data.fbInstances);
         };
+        this.notifyClientMonitoredVariableValueUpdated = () => {
+            index_1.socketEngine.sendMessageToClient([SmartComponentController.BASE_NAME_SPACE, this.namespace], SmartComponentController.EDITED_MVI_EVENT, this.data.monitoredVariableInstances);
+        };
         this.opcuaController = new opcuaClient_1.OpcUaClient(address, port);
         this.opcuaController.registerObserver(this);
         this.namespace = `${SmartComponentController.BASE_NAME_SPACE}/${id}`;
+        //this.variable = SmartComponentController.EDITED_MVI_EVENT
         this.data = {
             scAddress: address,
             scPort: port,
@@ -87,6 +98,7 @@ class SmartComponentController {
                 yield this.opcuaController.connect(this.setConnected, this.setDisconnected);
                 yield this.readMainValuesAndNotifyClient();
                 yield this.readFunctionBlocksAndNotifyClient();
+                yield this.readMonitoredVariablesAndNotifyClient();
                 res();
             }
             catch (err) {
@@ -130,11 +142,39 @@ class SmartComponentController {
         });
         this.notifyClientFBIUpdated();
     }
+    //Lê a informação relativa à variável VALUE
+    readMonitoredVariablesAndNotifyClient() {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                console.log("this.variable.sendVariableToServer: ", this.initializer.data);
+                const monitoredVariableValues = yield this.opcuaController.getAllMonitoredVariableInstances();
+                const promisesMVI = [];
+                monitoredVariableValues.forEach((element) => {
+                    promisesMVI.push(digitalTwinMainController_1.digitalTwinMainController.getMonitoredVariable(new request_1.RequestResponse(), [{ key: 'monitoredVariableName', value: element.monitoredVariableName }]));
+                });
+                const mvis = yield Promise.all(promisesMVI);
+                this.data.monitoredVariableInstances = monitoredVariableValues.map((element, index) => {
+                    var _a;
+                    const monVar = (_a = mvis[index].result[0]) !== null && _a !== void 0 ? _a : undefined;
+                    return {
+                        id: element.id,
+                        currentValue: element.currentValue,
+                        monitoredVariableName: element.monitoredVariableName
+                    };
+                });
+                this.notifyClientMonitoredVariableValueUpdated();
+            }
+            catch (err) {
+                console.error(err);
+            }
+        });
+    }
 }
 exports.SmartComponentController = SmartComponentController;
 SmartComponentController.EDITED_SC_EVENT = "smart-component-updated";
 SmartComponentController.EDITED_FBI_EVENT = "smart-component-fbi-updated";
 SmartComponentController.BASE_NAME_SPACE = 'smart-component';
+SmartComponentController.EDITED_MVI_EVENT = "smart-component-mvi-updated";
 SmartComponentController.buildSmartComponentController = (address, port, id, name, type) => {
     return new Promise((res, rej) => {
         const smartComponentController = new SmartComponentController(address, port, id, name, type);
@@ -143,6 +183,7 @@ SmartComponentController.buildSmartComponentController = (address, port, id, nam
             try {
                 yield smartComponentController.readMainValuesAndNotifyClient();
                 yield smartComponentController.readFunctionBlocksAndNotifyClient();
+                yield smartComponentController.readMonitoredVariablesAndNotifyClient();
                 res(smartComponentController);
             }
             catch (err) {

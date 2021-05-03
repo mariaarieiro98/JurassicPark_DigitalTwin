@@ -11,6 +11,20 @@ import { useMountEffect } from '../../utils/main'
 import { RequestResponseState } from '../../services/api/api'
 import { SmartComponentList } from './SmartComponent'
 
+const updateOnRemoveSmartComponent = (smartComponents: SmartComponent[], smartComponentToRemove: SmartComponent ) : SmartComponent[] => {
+
+  const newSmartComponents : SmartComponent[] = [...smartComponents]
+  newSmartComponents.forEach((sc: SmartComponent) => {
+
+      //sc.scName = sc.scName.filter((smartComponent: SmartComponent) => smartComponent.scName !== smartComponentToRemove.scName)
+
+  })
+
+  return newSmartComponents
+
+}
+
+
 interface DigitalTwinFormProps {
 
     dtName: {
@@ -18,7 +32,7 @@ interface DigitalTwinFormProps {
         setDtName: Function
     },
     associatedSc: {
-        associatedSc: string
+        associatedSc: SmartComponent[]
         setAssociatedSc: Function
     }
     cancel: {
@@ -47,7 +61,6 @@ interface DigitalTwinFormProps {
     },
     order?: number,
     newSc?: boolean,
-    // addRemoveAssociatedSmartComponent: (associatedSc: AssociatedSmartComponent) => void,
 }
 
 export const DigitalTwinForm = (props: DigitalTwinFormProps) => {
@@ -126,50 +139,19 @@ export const DigitalTwinForm = (props: DigitalTwinFormProps) => {
         action:props.confirmDialog.action,
       
     }
-
-    // Recuperar diretamente da comunicação OPC-UA os smart_components disponíveis (SmartComponent)
-    useMountEffect(() => {
-
-      setTimeout(() => {
   
-      setFetching(true)
-      getOrDownloadSmartComponents(smartComponents)
-          .then((result: SmartComponent[]) => updateSmartComponents(result))
-          .catch((e:RequestResponseState) => setError(e.msg))
-          .finally(() => setFetching(false))
-      }, 0)
-      })
-  
-    // Associar um SmartComponent pelo frontend
-      
-    const [fetching,setFetching] = useState(true)
+    //Associar um SmartComponent pelo frontend
+    
     const {data:smartComponents, dispatchAction:dispatchSmartComponentActions} = useStore('smartComponents')
     const updateSmartComponents = (scs: SmartComponent[]) => dispatchSmartComponentActions(SmartComponentActions.updateSmartComponent(scs))
-    const [error,setError] = useState('')
 
-    const [smartComponentChoice, setSmartComponentChoice] = useState('')
-    const [smartComponentIdChoice, setSmartComponentIdChoice] = useState(0)
-  
-    const handleSmartComponentChoice = (event: React.ChangeEvent<{ value: unknown }>) => {
-      setSmartComponentChoice(event.target.value as string);
-      props.associatedSc.setAssociatedSc(event.target.value as string)
-      let i = 0;
-      while(i < smartComponents.length)
-      {
-          if( smartComponents[i].scName === (event.target.value as string))
-          {
-              setSmartComponentIdChoice(smartComponents[i].scId)
-          }
-          i++;
-      }
-    };
+    const {associatedSc, setAssociatedSc} = props.associatedSc
 
-    const action = () => {
+    const onSmartComponentRemoval = useCallback((smartComponentToRemove: SmartComponent) => {
 
-      // else
-      //props.addRemoveAssociatedSmartComponent(props.associatedSc)
-      
-    }
+      setAssociatedSc((prevSmartComponents: SmartComponent[]) =>  updateOnRemoveSmartComponent(prevSmartComponents,smartComponentToRemove))
+
+  }, [setAssociatedSc])
 
     return (
       <Grid className={classes.box} spacing={2} container direction="column" component="form">
@@ -182,50 +164,24 @@ export const DigitalTwinForm = (props: DigitalTwinFormProps) => {
                 helperText=""
                 error={!validDtName} 
                 fullWidth required 
-                label="Insert New Digital Twin Name" 
+                label="New Digital Twin Name" 
                 id="dt-name" 
                 type="text" />
             </Grid>
           </Grid>
-          <Grid container item xs>
-              <Grid className={classes.box} spacing={1} item container direction="row">
-                <Grid item xs={6}>
-                  <SmartComponentList onVariableEdition={onInputVariableEdition} onVariableRemoval={onInputVariableRemoval} setVariables={setFbInputVariables} inOutType={InOutType.in} title="Input" variables={fbInputVariables} />
-                </Grid>
-                <Grid item xs={6}>
-                  <SmartComponentList onVariableEdition={onOutputVariableEdition} onVariableRemoval={onOutputVariableRemoval} setVariables={setFbOutputVariables} inOutType={InOutType.out} title="Output" variables={fbOutputVariables} />
-                </Grid>
-              </Grid>
-          </Grid>
-          {/* <Grid item container direction="row" justify="space-between" alignItems="center">
+          <Grid item container direction="row" justify="space-between" alignItems="center">
             {props.order ?
             <Grid item xs={1}>
                 {props.order}
             </Grid>
             : null
             }
-            <Grid item xs={3}>
-              <FormControl fullWidth required>
-                <InputLabel id={`digital-twin-label-${smartComponents}`}>SmartComponent</InputLabel>
-                <Select
-                  labelId={`digital-twin-label-${smartComponents}`}
-                  value={smartComponentChoice}
-                  onChange={handleSmartComponentChoice}
-                >
-                   {(smartComponents || []).map((smartComponent: any) => {return <MenuItem key={smartComponent.scId} value={smartComponent.scName}>{smartComponent.scName}</MenuItem>})}
-                </Select>
-              </FormControl>
+            <Grid className={classes.box} spacing={1} item container direction="row">
+                <Grid item xs={6}>
+                  <SmartComponentList onSmartComponentRemoval={onSmartComponentRemoval} setSmartComponents={setAssociatedSc}  title="Smart Component" smartComponents={associatedSc} />
+                </Grid>
             </Grid>
-            <Grid item xs={1}>
-              <Button 
-                className={classes.varEvButton} 
-                size="small" 
-                variant="contained"
-                // onClick={action}
-              >
-              {props.newSc ? '+' : 'x' }</Button>
-            </Grid>
-          </Grid> */}
+          </Grid>
           <Grid item xs container direction="row" justify="space-between" alignItems="center"> 
             <Grid item xs={6} container direction="row" spacing={2} alignItems="center" justify="flex-end">
               <Grid item>

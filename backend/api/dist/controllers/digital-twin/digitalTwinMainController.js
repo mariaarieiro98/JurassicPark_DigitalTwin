@@ -22,10 +22,18 @@ class DigitalTwinMainController {
                 funcUserId: func.funcUserId,
             }));
         };
-        this.processRawAssociatedSmartComponents = (raw) => {
-            const grouped = utils_1.groupBy(raw, 'idAssociateSmartComponent', ['scFuncId', 'scName']);
-            return grouped.map((associatedSc) => ({
-                idAssociateSmartComponent: parseInt(associatedSc.idAssociateSmartComponent), scFuncId: associatedSc.scFuncId, scName: associatedSc.scName
+        this.processRawMonitoredVariables = (raw) => {
+            const grouped = utils_1.groupBy(raw, 'idMonitoredVariable', ['fbAssociated', 'monitoredVariableName', 'funcIdAssociated', 'scAssociated', 'funcName']);
+            return grouped.map((monoVar) => ({
+                idMonitoredVariable: parseInt(monoVar.idMonitoredVariable), monitoredVariableName: monoVar.monitoredVariableName, funcIdAssociated: monoVar.funcIdAssociated, funcName: monoVar.funcName,
+                fbAssociated: monoVar.fbAssociated, scAssociated: monoVar.scAssociated
+            }));
+        };
+        this.processRawMonitoredEvents = (raw) => {
+            const grouped = utils_1.groupBy(raw, 'idMonitoredEvent', ['fbAssociated', 'monitoredEventName', 'funcIdAssociated', 'scAssociated', 'funcName']);
+            return grouped.map((monoEv) => ({
+                idMonitoredVariable: parseInt(monoEv.idMonitoredEvent), monitoredEventName: monoEv.monitoredEventName, funcIdAssociated: monoEv.funcIdAssociated, funcName: monoEv.funcName,
+                fbAssociated: monoEv.fbAssociated, scAssociated: monoEv.scAssociated
             }));
         };
         this.getAssociatedSmartComponent = (response) => {
@@ -44,13 +52,17 @@ class DigitalTwinMainController {
                 }
             }));
         };
-        this.createAssociatedSmartComponent = (scName, scDtId, response) => {
+        this.createAssociatedSmartComponent = (associatedSmartComponent, response) => {
             return new Promise((res, rej) => __awaiter(this, void 0, void 0, function* () {
                 try {
-                    console.log(scName);
-                    const insertSmartComponent = 'Insert INTO AssociatedSmartComponent(scName, scDtId, associatedScUserId) VALUES(?,?,?)';
-                    const result = yield database_1.DatabaseUtils.executeStatement(insertSmartComponent, [scName, scDtId, 1]);
-                    response.setExtra({ lastInsertedId: result.result.insertId });
+                    const stmtAssociatedSmartComponent = {
+                        sql: 'Insert INTO AssociatedSmartComponent(scName,associatedScUserId,scDtId) VALUES(?,?,?)',
+                        params: [associatedSmartComponent.scName, associatedSmartComponent.associatedScUserId, associatedSmartComponent.scDtId],
+                        type: database_1.Operation.insert,
+                        insertTable: model_1.Tables.associatedSmartComponent
+                    };
+                    const insertIds = yield database_1.DatabaseUtils.executeTransaction([stmtAssociatedSmartComponent]);
+                    response.setExtra({ lastInsertedId: insertIds.AssociatedSmartComponent });
                     res(response);
                 }
                 catch (error) {
@@ -92,7 +104,7 @@ class DigitalTwinMainController {
                         insertTable: model_1.Tables.functionality
                     };
                     const insertIds = yield database_1.DatabaseUtils.executeTransaction([stmtFunctionality]);
-                    response.setExtra({ lastInsertedId: insertIds.FunctionBlock });
+                    response.setExtra({ lastInsertedId: insertIds.Functionality });
                     res(response);
                 }
                 catch (error) {
@@ -138,22 +150,13 @@ class DigitalTwinMainController {
                         rej(response);
                         return;
                     }
-                    // if(oldFunctionality.funcName === functionality.funcName) {
-                    //     res(response)
-                    //     return
-                    // }
-                    if (functionality.funcscName === null || functionality.funcscId === null) {
-                        const updateFunctionalityStmt = 'UPDATE Functionality SET funcName = ? WHERE funcId = ?';
-                        yield database_1.DatabaseUtils.executeStatement(updateFunctionalityStmt, [functionality.funcName, id]);
+                    if (oldFunctionality.funcName === functionality.funcName) {
                         res(response);
+                        return;
                     }
-                    console.log(functionality.funcscName);
-                    if (functionality.funcscName !== null) {
-                        console.log(functionality.funcscName);
-                        const updateFunctionalityStmt = 'UPDATE Functionality SET funcscId = ?, funcscName = ? WHERE funcId = ?';
-                        yield database_1.DatabaseUtils.executeStatement(updateFunctionalityStmt, [functionality.funcscId, functionality.funcscName, id]);
-                        res(response);
-                    }
+                    const updateFunctionalityStmt = 'UPDATE Functionality SET funcName = ? WHERE funcId = ?';
+                    yield database_1.DatabaseUtils.executeStatement(updateFunctionalityStmt, [functionality.funcName, id]);
+                    res(response);
                 }
                 catch (error) {
                     console.error(error);
@@ -262,6 +265,90 @@ class DigitalTwinMainController {
                 catch (error) {
                     console.error(error);
                     response.setErrorState('Error Updating Digital Twin', model_1.GeneralErrors.general.code);
+                    rej(response);
+                }
+            }));
+        };
+        this.getMonitoredVariable = (response, filters) => {
+            return new Promise((res, rej) => __awaiter(this, void 0, void 0, function* () {
+                var _a;
+                try {
+                    let query = `SELECT MONVAR.*, 
+                                FUNC.funcId, FUNC.funcName
+                               FROM MonitoredVariable as MONVAR
+                               JOIN Functionality as FUNC ON FUNC.funcId = MONVAR.funcIdAssociated `;
+                    filters === null || filters === void 0 ? void 0 : filters.forEach((filter, index) => {
+                        query += `${!index ? 'WHERE' : 'AND'} ${filter.key} = ? `;
+                    });
+                    const result = yield database_1.DatabaseUtils.executeStatement(query, (_a = filters === null || filters === void 0 ? void 0 : filters.map(f => f.value)) !== null && _a !== void 0 ? _a : []);
+                    response.setResult(this.processRawMonitoredVariables(result.result));
+                    res(response);
+                }
+                catch (error) {
+                    console.error(error);
+                    response.setErrorState('Error Getting Monitored Variables', model_1.GeneralErrors.general.code);
+                    rej(response);
+                }
+            }));
+        };
+        this.createMonitoredVariable = (monitoredVariable, response) => {
+            return new Promise((res, rej) => __awaiter(this, void 0, void 0, function* () {
+                try {
+                    const stmtMonitoredVariable = {
+                        sql: 'Insert INTO MonitoredVariable(funcIdAssociated,fbAssociated,monitoredVariableName, scAssociated) VALUES(?,?,?,?)',
+                        params: [monitoredVariable.funcIdAssociated, monitoredVariable.fbAssociated, monitoredVariable.monitoredVariableName, monitoredVariable.scAssociated],
+                        type: database_1.Operation.insert,
+                        insertTable: model_1.Tables.monitoredVariable
+                    };
+                    const insertIds = yield database_1.DatabaseUtils.executeTransaction([stmtMonitoredVariable]);
+                    response.setExtra({ lastInsertedId: insertIds.MonitoredVariable });
+                    res(response);
+                }
+                catch (error) {
+                    console.error(error);
+                    response.setErrorState('Error Creating MonitoredVariable', model_1.GeneralErrors.general.code);
+                    rej(response);
+                }
+            }));
+        };
+        this.getMonitoredEvent = (response, filters) => {
+            return new Promise((res, rej) => __awaiter(this, void 0, void 0, function* () {
+                var _a;
+                try {
+                    let query = `SELECT MONEV.*, 
+                                FUNC.funcId, FUNC.funcName
+                               FROM MonitoredEvent as MONEV
+                               JOIN Functionality as FUNC ON FUNC.funcId = MONEV.funcIdAssociated`;
+                    filters === null || filters === void 0 ? void 0 : filters.forEach((filter, index) => {
+                        query += `${!index ? 'WHERE' : 'AND'} ${filter.key} = ? `;
+                    });
+                    const result = yield database_1.DatabaseUtils.executeStatement(query, (_a = filters === null || filters === void 0 ? void 0 : filters.map(f => f.value)) !== null && _a !== void 0 ? _a : []);
+                    response.setResult(this.processRawMonitoredEvents(result.result));
+                    res(response);
+                }
+                catch (error) {
+                    console.error(error);
+                    response.setErrorState('Error Getting Monitored Events', model_1.GeneralErrors.general.code);
+                    rej(response);
+                }
+            }));
+        };
+        this.createMonitoredEvent = (monitoredEvent, response) => {
+            return new Promise((res, rej) => __awaiter(this, void 0, void 0, function* () {
+                try {
+                    const stmtMonitoredEvent = {
+                        sql: 'Insert INTO MonitoredEvent(funcIdAssociated,fbAssociated,monitoredEventName, scAssociated) VALUES(?,?,?,?)',
+                        params: [monitoredEvent.funcIdAssociated, monitoredEvent.fbAssociated, monitoredEvent.monitoredEventName, monitoredEvent.scAssociated],
+                        type: database_1.Operation.insert,
+                        insertTable: model_1.Tables.monitoredEvent
+                    };
+                    const insertIds = yield database_1.DatabaseUtils.executeTransaction([stmtMonitoredEvent]);
+                    response.setExtra({ lastInsertedId: insertIds.MonitoredEvent });
+                    res(response);
+                }
+                catch (error) {
+                    console.error(error);
+                    response.setErrorState('Error Creating MonitoredEvent', model_1.GeneralErrors.general.code);
                     rej(response);
                 }
             }));

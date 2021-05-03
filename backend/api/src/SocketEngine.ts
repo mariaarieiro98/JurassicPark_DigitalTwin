@@ -1,3 +1,4 @@
+import { verifyIsOPCUAValidCertificate } from "node-opcua-client";
 import * as socketIO from "socket.io";
 
 
@@ -6,9 +7,16 @@ export interface Initializer {
     action?: () => void
 }
 
+export interface MonitoredVariable {
+    sendVariableToServer(variable:string)
+    data: (variable: string) => void 
+    action?: () => void
+}
+
 export interface SocketEngineInterface {
     namespace: string
     initializer? : Initializer
+    variable?: MonitoredVariable
 }
 
 export class SocketEngine {
@@ -28,7 +36,7 @@ export class SocketEngine {
             
             this.connection = socketIO(port)
             this.connection.on("connection", (socket: SocketIO.Socket) => {
-                                
+
                 socket.on("disconnect", () => {
 
                     socket.removeAllListeners()
@@ -60,8 +68,14 @@ export class SocketEngine {
 
             if(socketInterface.initializer?.action)
                 socketInterface.initializer.action()
-            
+
             socket.emit('initial-data', socketInterface.initializer?.data())
+
+            socket.on('smart-component-mvi-updated', (variable, fn) => {
+                socketInterface.variable?.sendVariableToServer(variable)
+                fn("woot");
+            });
+            
                         
             socket.on("disconnect", () => {
                 socket.disconnect()
@@ -71,7 +85,7 @@ export class SocketEngine {
     }
 
     public addListenerToNamespace(namespace: string, event: string, listener?: Function, dataToSend?: any) {
- 
+
         this.connection.of('/'+ namespace).on("connection", (socket: SocketIO.Socket) => {
 
             socket.on(event, (data) => {
@@ -83,6 +97,7 @@ export class SocketEngine {
         })
 
     }
+
 
     sendMessageToClient = (namespaces:string[], event: string, payload: any) => {
 

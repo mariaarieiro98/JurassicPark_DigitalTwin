@@ -1,5 +1,5 @@
-import { DigitalTwin, Functionality } from "../model/index"
-import { getDigitalTwins, getFunctionalities } from "../services/api/digital-twin"
+import { DigitalTwin, Functionality, MonitoredEvent, MonitoredVariable } from "../model/index"
+import { getDigitalTwins, getFunctionalities, getMonitoredEvents, getMonitoredVariables } from "../services/api/digital-twin"
 import { RequestResponseState } from "../services/api/api"
 
 export const getOrDownloadDigitalTwins = (dts: DigitalTwin[]) :  Promise<DigitalTwin[]> => {
@@ -29,4 +29,34 @@ export const getOrDownloadFunctionalities = (functionalities: Functionality[]) :
     })
 
 }
+
+
+export const getOrDownloadMonitoredVariables = (monitoredVariables: MonitoredVariable[]) :  Promise<MonitoredVariable[]> => {
+
+    return new Promise((res: Function, rej:Function) => {
+
+        if(monitoredVariables.length) 
+            res(monitoredVariables)
+        else 
+            getMonitoredVariables()
+                .then((result: MonitoredVariable[]) => res(result))
+                .catch((error: RequestResponseState) => rej(error))
+    })
+
+}
+
+export const getOrDownloadMonitoredEvents = (monitoredEvents: MonitoredEvent[]) :  Promise<MonitoredEvent[]> => {
+
+    return new Promise((res: Function, rej:Function) => {
+
+        if(monitoredEvents.length) 
+            res(monitoredEvents)
+        else 
+            getMonitoredEvents()
+                .then((result: MonitoredEvent[]) => res(result))
+                .catch((error: RequestResponseState) => rej(error))
+    })
+
+}
+
 

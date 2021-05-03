@@ -22,7 +22,6 @@ interface SmartComponentWithDataState extends SmartComponent {
     }
 }
 
-
 export const SmartComponentList = () : React.ReactElement => {
     
     const classes = useSmartComponentStyles()

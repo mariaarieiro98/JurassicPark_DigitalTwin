@@ -1,4 +1,4 @@
-import { FunctionBlock, FBCategory, DigitalTwin , Functionality, SmartComponent} from "../model"
+import { FunctionBlock, FBCategory, DigitalTwin , Functionality, SmartComponent, MonitoredVariable, MonitoredEvent} from "../model"
 import { AssociatedSmartComponent } from "../model/model/AssociatedSmartComponent"
 
 export interface Action {
@@ -44,8 +44,17 @@ export const ACTION_TYPES = {
     ASSOCIATED_SMART_COMPONENT: {
         UPDATE_ASSOCIATED_SMART_COMPONENTS: 'UPDATE_ASSOCIATED_SMART_COMPONENTS',
         ADD_ASSOCIATED_SMART_COMPONENTS: 'ADD_ASSOCIATED_SMART_COMPONENTS',
-    }
-    
+    },
+
+    MONITORED_VARIABLE: {
+        UPDATE_MONITORED_VARIABLES: 'UPDATE_MONITORED_VARIABLES',
+        ADD_MONITORED_VARIABLES: 'ADD_MONITORED_VARIABLES',
+    },
+
+    MONITORED_EVENT: {
+        UPDATE_MONITORED_EVENTS: 'UPDATE_MONITORED_EVENTS',
+        ADD_MONITORED_EVENTS: 'ADD_MONITORED_EVENTS',
+    }, 
 }
 
 export class FunctionBlockActions {
@@ -196,6 +205,46 @@ export class AssociatedSmartComponentActions {
         return {
             type: ACTION_TYPES.ASSOCIATED_SMART_COMPONENT.ADD_ASSOCIATED_SMART_COMPONENTS,
             payload: associatedSmartComponent
+        }
+    }
+
+}
+
+export class MonitoredVariableActions {
+
+    static updateMonitoredVariable = (monitoredVariable: MonitoredVariable[]) : Action => {
+        
+        return {
+            type: ACTION_TYPES.MONITORED_VARIABLE.UPDATE_MONITORED_VARIABLES,
+            payload: monitoredVariable
+        }
+    }
+
+    static addMonitoredVariable = (monitoredVariable: MonitoredVariable) : Action => {
+        
+        return {
+            type: ACTION_TYPES.MONITORED_VARIABLE.UPDATE_MONITORED_VARIABLES,
+            payload: monitoredVariable
+        }
+    }
+
+}
+
+export class MonitoredEventActions {
+
+    static updateMonitoredEvent = (monitoredEvent: MonitoredEvent[]) : Action => {
+        
+        return {
+            type: ACTION_TYPES.MONITORED_EVENT.UPDATE_MONITORED_EVENTS,
+            payload: monitoredEvent
+        }
+    }
+
+    static addMonitoredEvent = (monitoredEvent: MonitoredEvent) : Action => {
+        
+        return {
+            type: ACTION_TYPES.MONITORED_EVENT.UPDATE_MONITORED_EVENTS,
+            payload: monitoredEvent
         }
     }
 

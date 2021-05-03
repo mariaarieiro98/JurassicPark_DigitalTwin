@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Navigator } from '../templates/Navigator/Navigator'
-import { FBGeneralCategory, Variable, Event, FunctionBlock, ExternalDependency, FBCategory, DigitalTwin, AssociatedSmartComponent } from '../../model/index'
+import { FBGeneralCategory, Variable, Event, FunctionBlock, ExternalDependency, FBCategory, DigitalTwin, AssociatedSmartComponent, SmartComponent } from '../../model/index'
 import { Redirect } from 'react-router-dom'
 import { routes } from '../../App'
 import { createFunctionBlock } from '../../services/api/function-block'
@@ -15,10 +15,8 @@ import { getOrDownloadFunctionBlocks } from '../../utils/functionBlock'
 import { getOrDownloadDigitalTwins } from '../../utils/digitalTwins'
 import { createDigitalTwin } from '../../services/api/digital-twin'
 import { createAssociatedSmartComponents } from '../../services/api/digital-twin'
-
-/**
- * for now
- */
+import { isConstructorDeclaration } from 'typescript'
+import { LocalConvenienceStoreOutlined } from '@material-ui/icons'
 
 const dtUserId = 1
 
@@ -41,14 +39,13 @@ export const NewDigitalTwin = () => {
   const [redirectTo, setRedirectTo] : [string, Function] = useState("")
 
   const [dtName,setDtName] : [string,Function] = useState('')
-  const [associatedSc,setAssociatedSc] : [string,Function] = useState('')
-  
-  const [fbInputVariables, setFbInputVariables] : [Variable[],Function] = useState([])
+  const [associatedSc,setAssociatedSc] : [SmartComponent[],Function] = useState([])
+  const [choosenAssociatedSc, setChoosenAssociatedSc] : [AssociatedSmartComponent[] ,Function] = useState([])
 
   let dtId = 1
   let idAssociatedSmartComponent = 1
 
-  const redirectToList = () => setRedirectTo(routes.functionBlockList)
+  const redirectToList = () => setRedirectTo(routes.digitalTwinMonitoring)
 
   const buildDigitalTwin = () : DigitalTwin => ({
     dtName, dtId,
@@ -57,37 +54,57 @@ export const NewDigitalTwin = () => {
 
   const redirectToListAndUpdateLocal = () => {
     dispatchDigitalTwinActions(DigitalTwinActions.addDigitalTwin(buildDigitalTwin()))
-
-    //dispatchAssociatedSmartComponentActions(AssociatedSmartComponentActions.updateFunctionBlockCategories(newCategories))
     redirectToList()
   } 
-
+  
+  const buildAssociatedSmartComponent = (associatedSc : SmartComponent[], dtId: number, i: number) : AssociatedSmartComponent => ({
+    scName: associatedSc[i].scName, scDtId: dtId,
+    associatedScUserId: 1
+  })
+  
   const createDigitalTwinAction = () : Promise<string> => {
     
     return new Promise<string>((res:Function, rej:Function)  => {
 
       setTimeout(() => {
-        
-        createDigitalTwin(dtName)
+
+        if(associatedSc.length === 0){
+          
+          createDigitalTwin(dtName)
+          .then((result: RequestResponseState) => {
+            dtId = result.extra.lastInsertedId
+            res('Digital Twin created')
+          })
+
+          .catch((e:RequestResponseState) => rej(e.msg))
+
+        }
+
+        else {
+
       
-        .then((r:RequestResponseState) => {
-                dtId = r.extra.lastInsertedId
-
-                createAssociatedSmartComponents(associatedSc,dtId)
-                  .then((r:RequestResponseState) => {
-                        idAssociatedSmartComponent= r.extra.lastInsertedId
-                          res(r.msg)
-                  }) 
-                  .catch((e:RequestResponseState) => rej(e.msg))
-                          res(r.msg)
-                  }) 
-
-        .catch((e:RequestResponseState) => rej(e.msg))
-
+          createDigitalTwin(dtName)
+          .then((result:RequestResponseState) => {
+            dtId = result.extra.lastInsertedId
+            res('Digital Twin created')
+            let i = 0  
+            while(associatedSc.length){         
+            const choosenAssociatedSc : AssociatedSmartComponent = buildAssociatedSmartComponent(associatedSc,dtId,i)
+            i++
+            createAssociatedSmartComponents(choosenAssociatedSc)
+            .then((r:RequestResponseState) => {
+              idAssociatedSmartComponent= r.extra.lastInsertedId
+            }) 
+            .catch((e:RequestResponseState) => rej(e.msg))
+            }
+          })
+          .catch((e:RequestResponseState) => rej(e.msg))
+                    
+        }
       })
     })
   }
-  
+
   if(redirectTo !== "") 
     return <Redirect to={redirectTo} push={true} />
   

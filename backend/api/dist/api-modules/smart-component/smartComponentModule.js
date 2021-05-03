@@ -23,7 +23,6 @@ smartComponentModule.addRoute({
             try {
                 let response = new request_1.RequestResponse();
                 yield smartComponentMainController_1.smartComponentMainController.getSmartObjectSData(response);
-                //console.log(response)
                 res.json(response.get());
             }
             catch (error) {

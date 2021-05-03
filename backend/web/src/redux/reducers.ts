@@ -1,5 +1,5 @@
 import { ACTION_TYPES, Action } from "./actions"
-import { FunctionBlock, FBCategory , Functionality, DigitalTwin, SmartComponent } from "../model"
+import { FunctionBlock, FBCategory , Functionality, DigitalTwin, SmartComponent, MonitoredVariable, MonitoredEvent } from "../model"
 import { Reducer } from "react"
 import { AssociatedSmartComponent } from "../model/model/AssociatedSmartComponent"
 
@@ -115,6 +115,40 @@ export const associatedSmartComponentReducer : Reducer<AssociatedSmartComponent[
             return action.payload
 
         case ACTION_TYPES.ASSOCIATED_SMART_COMPONENT.ADD_ASSOCIATED_SMART_COMPONENTS:
+            return [...state, action.payload]
+
+        default:
+            throw new Error()
+
+    }
+
+}
+
+export const monitoredVariableReducer : Reducer<MonitoredVariable[], Action> = (state: MonitoredVariable[], action: Action) : MonitoredVariable[] => {
+
+    switch(action.type) {
+
+        case ACTION_TYPES.MONITORED_VARIABLE.UPDATE_MONITORED_VARIABLES:
+            return action.payload
+
+        case ACTION_TYPES.MONITORED_VARIABLE.ADD_MONITORED_VARIABLES:
+            return [...state, action.payload]
+
+        default:
+            throw new Error()
+
+    }
+
+}
+
+export const monitoredEventReducer : Reducer<MonitoredEvent[], Action> = (state: MonitoredEvent[], action: Action) :  MonitoredEvent[] => {
+
+    switch(action.type) {
+
+        case ACTION_TYPES.MONITORED_EVENT.UPDATE_MONITORED_EVENTS:
+            return action.payload
+
+        case ACTION_TYPES.MONITORED_EVENT.ADD_MONITORED_EVENTS:
             return [...state, action.payload]
 
         default:

@@ -13,12 +13,11 @@ interface SmartComponentProps {
   smartComponents: SmartComponent[]
   title: string
   onSmartComponentRemoval: (smartComponent: SmartComponent) => void
-  onSmartComponentEdition: (oldSmartComponent: SmartComponent, newSmartComponent: SmartComponent) => void
 }
 
 export const SmartComponentList = React.memo((props: SmartComponentProps) => {
   
-  const {smartComponents,setSmartComponents,onSmartComponentRemoval,onSmartComponentEdition} = props
+  const {smartComponents,setSmartComponents,onSmartComponentRemoval} = props
 
   const classes = useFunctionBlockStyles()
 
@@ -38,12 +37,11 @@ export const SmartComponentList = React.memo((props: SmartComponentProps) => {
       const oldSmartComponent : SmartComponent = prevScs[index]
       const newSmartComponents : SmartComponent[] = [...prevScs]
       newSmartComponents[index] = smartComponent
-      onSmartComponentEdition(oldSmartComponent,smartComponent)
       return newSmartComponents
 
     }) 
 
-  },[onSmartComponentEdition, setSmartComponents])
+  },[setSmartComponents])
 
   const addSmartComponent = useCallback((scToAdd: SmartComponent) => {
     
@@ -137,7 +135,7 @@ const SmartComponentRow = React.memo((props: SmartComponentRowProps) => {
       }
       <Grid item xs={3}>
         <FormControl fullWidth required>
-          <InputLabel id={`smart-component-label-${props.smartComponent.scName}`}>SmartComponents</InputLabel>
+          <InputLabel id={`smart-component-label-${props.smartComponent.scName}`}></InputLabel>
           <Select
             labelId={`smart-component-label-${props.smartComponent.scName}`}
             value={props.smartComponent.scName}
@@ -158,6 +156,6 @@ const SmartComponentRow = React.memo((props: SmartComponentRowProps) => {
       </Grid>
     </Grid>
   )
-}
+  }
  ,(prevProps:SmartComponentRowProps, nextProps: SmartComponentRowProps) => prevProps.smartComponent === nextProps.smartComponent
 )

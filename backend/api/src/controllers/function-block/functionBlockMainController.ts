@@ -636,7 +636,6 @@ export class FunctionBlockMainController {
 
     }
 
-
     public removeFunctionBlockCategory = (id: number, response: RequestResponse) : Promise<RequestResponse> => {
 
         return new Promise(async (res: Function, rej: Function) => {

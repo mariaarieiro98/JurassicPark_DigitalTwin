@@ -3,26 +3,30 @@ import { Navigator } from '../templates/Navigator/Navigator'
 import { ConfirmAction, ConfirmActionState, ConfirmActionStateLabel, ConfirmActionProps } from '../templates/ConfirmAction/ConfirmAction'
 import { LazyComponent } from '../templates/LazyComponent/LazyComponent'
 import { JPTable } from '../templates/Table/JPTable'
-import { Functionality, DigitalTwin, SmartComponent, AssociatedSmartComponent} from '../../model'
+import { Functionality, DigitalTwin, AssociatedSmartComponent, MonitoredVariable, MonitoredEvent} from '../../model'
 import { useMountEffect } from '../../utils/main'
-import { getOrDownloadDigitalTwins, getOrDownloadFunctionalities} from '../../utils/digitalTwins'
-import { getOrDownloadSmartComponents } from '../../utils/smartComponents'
+import { getOrDownloadDigitalTwins, getOrDownloadFunctionalities, getOrDownloadMonitoredEvents, getOrDownloadMonitoredVariables} from '../../utils/digitalTwins'
 import { getOrDownloadAssociatedSmartComponents } from '../../utils/associatedSmartComponents'
 import { useStore } from '../templates/Store/Store'
-import { FunctionalityActions , DigitalTwinActions, SmartComponentActions, AssociatedSmartComponentActions} from '../../redux/actions'
+import { FunctionalityActions , DigitalTwinActions, AssociatedSmartComponentActions, MonitoredVariableActions, MonitoredEventActions} from '../../redux/actions'
 import { RequestResponseState } from '../../services/api/api'
-import { TextField, Grid, Button, Box, Dialog, DialogTitle, CircularProgress , Select, InputLabel, MenuItem, FormControl, Input, FormHelperText } from '@material-ui/core'
-import { createFunctionality, updateFunctionality } from '../../services/api/digital-twin'
+import { TextField, Grid, Button, Box, Dialog, DialogTitle, CircularProgress , Select, InputLabel, MenuItem } from '@material-ui/core'
+import { createFunctionality, createMonitoredEvent, createMonitoredVariable, updateFunctionality } from '../../services/api/digital-twin'
 import { deleteFunctionality} from '../../services/api/digital-twin'
 import { useDialogStyles } from '../FunctionBlockCategories/List/style'
 import { CheckCircle, Error } from '@material-ui/icons'
 import { useFunctionBlockStyles } from '../FunctionBlocks/FunctionBlock/style'
-import { routes } from '../../App'
 import { Redirect } from 'react-router-dom'
+// import { FunctionalityForm } from './FunctionalityForm'
 
 const NEW_FUNCTIONALITY_RE = /[a-zA-Z0-9]{3,}/
+const FUNCTION_BLOCK_RE = /[a-zA-Z0-9]{3,}/
+const VARIABLE_RE = /[a-zA-Z0-9]{3,}/
+const EVENT_RE = /[a-zA-Z0-9]{3,}/
 
 let functionalityId = -1
+let idMonitoredVariable = -1
+let idMonitoredEvent = -1
 const funcUserId = 1
 
 const EditFunctionalityDialog = (props: {func: Functionality, onGood: (newFunc: Functionality) => void, onError: () => void, onCancel: () => void}) => {
@@ -124,53 +128,90 @@ const AddFunctionalityDetails = (props: {func: Functionality, onGood: (newFunc: 
     const [result, setResult] : [{done: boolean, good?: boolean, message?: string},Function] = useState({done:false})
 
     const [fetching,setFetching] = useState(true)
-    const {data:smartComponents, dispatchAction:dispatchSmartComponentActions} = useStore('smartComponents')
-    const updateSmartComponents = (scs: SmartComponent[]) => dispatchSmartComponentActions(SmartComponentActions.updateSmartComponent(scs))
+    const {data: associatedSmartComponents, dispatchAction: dispatchAssociatedSmartComponentActions} = useStore('associatedSmartComponents')
+    const updateAssociatedSmartComponents = (assScs: AssociatedSmartComponent[]) => dispatchAssociatedSmartComponentActions(AssociatedSmartComponentActions.updateAssociatedSmartComponents(assScs))
     const [error,setError] = useState('')
+    
+    const [availableSmartComponents, setAvailableSmartComponents] : [AssociatedSmartComponent[] , Function] = useState([])
 
-    // Recuperar diretamente da comunicação OPC-UA os smart_components disponíveis (SmartComponent)
+    // Recuperar da base de dados os Smart Components Associados ao Digital Twin associado
     useMountEffect(() => {
 
     setTimeout(() => {
 
     setFetching(true)
-    getOrDownloadSmartComponents(smartComponents)
-        .then((result: SmartComponent[]) => updateSmartComponents(result))
+    getOrDownloadAssociatedSmartComponents(associatedSmartComponents)
+        .then((result: AssociatedSmartComponent[]) =>  updateAssociatedSmartComponents(result))
         .catch((e:RequestResponseState) => setError(e.msg))
         .finally(() => setFetching(false))
     }, 0)
     })
 
-    // Associar um smartComponent à funcionalidade
+    let i = 0
+
+    while( i < associatedSmartComponents.length ) {
+        if(associatedSmartComponents[i].scDtId === props.func.funcdtId){
+            availableSmartComponents[i] = associatedSmartComponents[i]
+        }
+        i++
+    }
+
+    // Escolher um AssociatedSmartComponent de dentro dos disponíveis pelo DT respectivo 
     const [smartComponentChoice, setSmartComponentChoice] = useState('')
     const [smartComponentIdChoice, setSmartComponentIdChoice] = useState(0)
 
     const handleSmartComponentChoice = (event: React.ChangeEvent<{ value: unknown }>) => {
     setSmartComponentChoice(event.target.value as string);
-    let i = 0;
-    while(i < smartComponents.length)
+    let j = 0;
+    while(j < associatedSmartComponents.length)
     {
-        if( smartComponents[i].scName === (event.target.value as string))
+        if(associatedSmartComponents[j].scName === (event.target.value as string))
         {
-            setSmartComponentIdChoice(smartComponents[i].scId)
+            setSmartComponentIdChoice(associatedSmartComponents[j].scId)
         }
-        i++;
+        j++;
     }
     };
 
+    //Variáveis e funções de apoio à escolha do Function Block
+    const [validFunctionBlock, setValidFunctionBlock] : [boolean,Function] = useState(true)
+    const [newFb,setNewFb] : [string,Function] = useState('')
+    const isFunctionBlockValid = (fb:string) => NEW_FUNCTIONALITY_RE.test(fb)
+
+    //Variáveis e funções de apoio à escolha da Variable
+    const [validVariable, setValidVariable] : [boolean,Function] = useState(true)
+    const [newVariable,setNewVariable] : [string,Function] = useState('')
+    const isVariableValid = (variable:string) => VARIABLE_RE.test(variable)
+
+    const buildMonitoredVariable = (funcId: number | undefined) : MonitoredVariable => ({  
+        monitoredVariableName: newVariable, fbAssociated: newFb, 
+        funcIdAssociated: funcId , idMonitoredVariable: idMonitoredVariable,
+        scAssociated: smartComponentChoice
+    })
+
+    //Variáveis e funções de apoio à escolha do Event
+    const [validEvent, setValidEvent] : [boolean,Function] = useState(true)
+    const [newEvent,setNewEvent] : [string,Function] = useState('')
+    const isEventValid = (event:string) => EVENT_RE.test(event)
   
-    const action = () => {
-  
-        props.func.funcscId = smartComponentIdChoice;
-        props.func.funcscName = smartComponentChoice;
+    const buildMonitoredEvent = (funcId: number | undefined) : MonitoredEvent => ({  
+        monitoredEventName: newEvent, fbAssociated: newFb, 
+        funcIdAssociated: funcId , idMonitoredEvent: idMonitoredEvent,
+        scAssociated: smartComponentChoice
+    })
+
+    //Função de atualização da database com os dados escolhidos 
+    const action = () => {    
+        
+        let funcId = props.func.funcId
+        const monitoredVariable: MonitoredVariable = buildMonitoredVariable(funcId)
+        const monitoredEvent: MonitoredEvent = buildMonitoredEvent(funcId)
 
         if(props.func.funcId) {
   
             if(!result.done) {
   
                 setSending(true)
-                console.log(props.func)
-    
                 updateFunctionality(props.func)
   
                     .then((response: RequestResponseState) => {
@@ -182,6 +223,40 @@ const AddFunctionalityDetails = (props: {func: Functionality, onGood: (newFunc: 
                     })
   
                     .finally(() => setSending(false))
+                
+                if(newVariable!=''){
+
+                    createMonitoredVariable(monitoredVariable)
+
+  
+                    .then((response: RequestResponseState) => {
+                        setResult({done:true, good: true, message: response.msg})
+                    })
+  
+                    .catch((error: RequestResponseState) => {
+                        setResult({done: true, good: false, message: error.msg})
+                    })
+  
+                    .finally(() => setSending(false))
+                }
+                
+
+                if(newEvent!=''){
+                     
+                    createMonitoredEvent(monitoredEvent)
+
+    
+                    .then((response: RequestResponseState) => {
+                        setResult({done:true, good: true, message: response.msg})
+                    })
+
+                    .catch((error: RequestResponseState) => {
+                        setResult({done: true, good: false, message: error.msg})
+                    })
+
+                    .finally(() => setSending(false))
+                }
+               
             }
   
             else {
@@ -203,22 +278,56 @@ const AddFunctionalityDetails = (props: {func: Functionality, onGood: (newFunc: 
                 <Grid container item xs>
                     <Grid className={classes.box} spacing={3} item container direction="column" alignItems="flex-start">
                         <Grid item xs={12} sm={6}>
-                            <InputLabel id={`digital-twin-label-${smartComponents}`}>DINASORE</InputLabel>
-                            <Select labelId={`digital-twin-label-${smartComponents}`} value={smartComponentChoice} onChange={handleSmartComponentChoice}>
-                            {(smartComponents || []).map((smartComponent: any) => {return <MenuItem key={smartComponent.scId} value={smartComponent.scName}>{smartComponent.scName}</MenuItem>})}
+                            <InputLabel id={`smart-component-label-${availableSmartComponents}`}>DINASORE</InputLabel>
+                            <Select labelId={`smart-component-label-${availableSmartComponents}`} value={smartComponentChoice} onChange={handleSmartComponentChoice}>
+                            {(availableSmartComponents || []).map((sc: any) => {return <MenuItem key={sc.scId} value={sc.scName}>{sc.scName}</MenuItem>})}
                             </Select> 
                         </Grid>
                         <Grid item xs={12} sm={6}>
                             <TextField
                                 label= "Function Block"
+                                helperText={!validFunctionBlock ? FUNCTION_BLOCK_RE.toString() : ''}
+                                error={!validFunctionBlock}
+                                required
+                                onChange={(event) => {
+                                    setNewFb(event.target.value)
+                                    if(!validFunctionBlock)
+                                        setValidFunctionBlock(isFunctionBlockValid(event.target.value.trim()))
+                                    }}
+                                fullWidth
+                                value={newFb}
                             />
                         </Grid>
                         <Grid item xs={12} sm={6}>
                             <TextField
-                                label= "Variable/Event"
+                                label= "Variable"
+                                helperText={!validVariable ? VARIABLE_RE.toString() : ''}
+                                error={!validVariable}
+                                required
+                                onChange={(event) => {
+                                    setNewVariable(event.target.value)
+                                    if(!validVariable)
+                                        setValidVariable(isVariableValid(event.target.value.trim()))
+                                    }}
+                                fullWidth
+                                value={newVariable}
                             />
                         </Grid>
-
+                        <Grid item xs={12} sm={6}>
+                            <TextField
+                                label= "Event"
+                                helperText={!validEvent ? EVENT_RE.toString() : ''}
+                                error={!validEvent}
+                                required
+                                onChange={(event) => {
+                                    setNewEvent(event.target.value)
+                                    if(!validEvent)
+                                        setValidEvent(isEventValid(event.target.value.trim()))
+                                    }}
+                                fullWidth
+                                value={newEvent}
+                            />
+                        </Grid>
                     </Grid>
                 </Grid>
             </Grid>
@@ -238,7 +347,6 @@ const AddFunctionalityDetails = (props: {func: Functionality, onGood: (newFunc: 
     )
   
 }
-  
 
 export const DigitalTwinMonitoring = () => {
     
@@ -259,18 +367,21 @@ export const DigitalTwinMonitoring = () => {
     positiveLabel: 'Ok'
   }
 
-  const [redirectTo, setRedirectTo] : [string, Function] = useState("")
+  const [redirectTo, setRedirectTo] : [number, Function] = useState(-1)
 
   const {data:functionalities, dispatchAction:dispatchFunctionalityActions} = useStore('functionalities')
   const {data:digitalTwins, dispatchAction:dispatchDigitalTwinActions} = useStore('digitalTwins')
-  const {data:associatedSmartComponents, dispatchAction:dispatchAssociatedSmartComponentActions} = useStore('associatedSmartComponents')
+  const {data:monitoredVariables, dispatchAction:dispatchMonitoredVariableActions} = useStore('monitoredVariables')
+  const {data:monitoredEvents, dispatchAction:dispatchMonitoredEventActions} = useStore('monitoredEvents')
 
   const onCancel = () => setError('')
 
   const updateFunctionalities = (funcs: Functionality[]) => dispatchFunctionalityActions(FunctionalityActions.updateFunctionalities(funcs))
   const updateDigitalTwins = (dts: DigitalTwin[]) => dispatchDigitalTwinActions(DigitalTwinActions.updateDigitalTwins(dts))
-  const updateAssociatedSmartComponents = (assSc: AssociatedSmartComponent[]) => dispatchAssociatedSmartComponentActions(AssociatedSmartComponentActions.updateAssociatedSmartComponents(assSc))
-  
+  const updateMonitoredVariables = (monVars: MonitoredVariable[]) => dispatchMonitoredVariableActions(MonitoredVariableActions.updateMonitoredVariable(monVars))
+  const updateMonitoredEvents = (monEvs: MonitoredEvent[]) => {
+      dispatchMonitoredEventActions(MonitoredEventActions.updateMonitoredEvent(monEvs))
+  }
   
   const addFunc = () => dispatchFunctionalityActions(FunctionalityActions.addFunctionality({funcId: functionalityId, funcUserId: 1 , funcName: newFunc, funcdtId: 1}))
  
@@ -280,9 +391,9 @@ export const DigitalTwinMonitoring = () => {
   const indexes = [
     {label: 'Functionality', key: 'funcName'},
     {label: 'Digital Twin', key: 'dtName'},
-    {label: 'State', key: 'dtDescription'},
-    {label: 'Associated Smart Components', key: 'scName'},
-    {label: 'Monitored Variables/Events', key: 'dtMonitoredVariableEvent'},
+    //{label: 'State', key: 'dtDescription'},
+    {label: '#Monitored Variables', key: 'dtMonitoredVariableEvent'},
+    {label: '#Monitored Events', key: 'dtMonitoredVariableEvent'},
   ]
 
   // Recuperar da base de dados as funcionalidades (Functionality)
@@ -311,21 +422,6 @@ export const DigitalTwinMonitoring = () => {
     }, 0)
   })
 
-  // Recuperar da base de dados os smartComponents associados (AssociatedSmartComponent)
-//   useMountEffect(() => {
-
-//     setTimeout(() => {
-
-//     setFetching(true)
-//     getOrDownloadAssociatedSmartComponents(associatedSmartComponents)
-//         .then((result: AssociatedSmartComponent[]) => updateAssociatedSmartComponents(result))
-//         .catch((e:RequestResponseState) => setError(e.msg))
-//         .finally(() => setFetching(false))
-//     }, 0)
-//   })
-//   console.log(associatedSmartComponents)
-
-
   const isFunctionalityValid = (func:string) => NEW_FUNCTIONALITY_RE.test(func)
 
   const validateAndCreate = () => {
@@ -350,8 +446,6 @@ export const DigitalTwinMonitoring = () => {
     const functionality : Functionality = buildFunctionality()
 
     return new Promise<string>((res:Function, rej:Function)  => {
-
-        console.log(functionality)
 
         createFunctionality(functionality)
 
@@ -469,43 +563,70 @@ export const DigitalTwinMonitoring = () => {
    
   };
 
-  const redirectToList = () => setRedirectTo(routes.functionalityDetails)
+  // Recuperar da base de dados as monitoredVariables (MonitoredVariable)
+   useMountEffect(() => {
+
+    setTimeout(() => {
+
+    setFetching(true)
+    getOrDownloadMonitoredVariables(monitoredVariables)
+        .then((result: MonitoredVariable[]) => updateMonitoredVariables(result))
+        .catch((e:RequestResponseState) => setError(e.msg))
+        .finally(() => setFetching(false))
+    }, 0)
+   })
+
+  // Recuperar da base de dados as monitoredVariables (MonitoredVariable)
+   useMountEffect(() => {
+
+    setTimeout(() => {
+    
+    setFetching(true)
+    getOrDownloadMonitoredEvents(monitoredEvents)
+        .then((result: MonitoredEvent[]) => updateMonitoredEvents(result))
+        .catch((e:RequestResponseState) => setError(e.msg))
+        .finally(() => setFetching(false))
+    }, 0)
+  })
   
-  if(redirectTo !== "") 
-  return <Redirect to={redirectTo} push={true} />
+  const redirectToList = (func : Functionality) => setRedirectTo(func.funcId)
+
+  if(redirectTo !== -1) 
+  return  <Redirect to={`/functionality-details/${redirectTo}`} push={true}/>
+
 
   return (
     <Navigator title="New Digital Twin Functionality">
-     <> 
+    <> 
         {error !== ''
                 ? <ConfirmAction title='Fetching Functionalities' currentState={errorFetchingFunctionalityState} states={{error: errorFetchingFunctionalityState}} onCancel={onCancel}/>
                 : null 
         }
-         <LazyComponent loaded={!fetching}>
-             <>
-                {confirmEditing
-                     ? <ConfirmAction {...confirmActionProps} /> 
-                     : editingFunc
-                         ?  <EditFunctionalityDialog
-                             onGood={onGoodEditing}
-                             func={editingFunc}
-                             onError={cancelEditing}
-                             onCancel={cancelEditing} />
-                         : null
-                 }
-                {confirmAddFunc 
-                     ? <ConfirmAction {...confirmActionProps} /> 
-                     : addDetailsFunc
-                         ?  <AddFunctionalityDetails
-                             onGood={onGoodEditing}
-                             func={addDetailsFunc}
-                             onError={cancelAddDetails}
-                             onCancel={cancelAddDetails} />
-                         : null
-                 }
-                 <Grid container direction="column" spacing={2}>
-                      <Grid item>
-                        <JPTable
+        <LazyComponent loaded={!fetching}>
+        <>
+            {confirmEditing
+                ? <ConfirmAction {...confirmActionProps} /> 
+                : editingFunc
+                ? <EditFunctionalityDialog
+                    onGood={onGoodEditing}
+                    func={editingFunc}
+                    onError={cancelEditing}
+                    onCancel={cancelEditing} />
+                    : null
+            }
+            {confirmAddFunc 
+                ? <ConfirmAction {...confirmActionProps} /> 
+                : addDetailsFunc
+                ?  <AddFunctionalityDetails
+                    onGood={onGoodEditing}
+                    func={addDetailsFunc}
+                    onError={cancelAddDetails}
+                    onCancel={cancelAddDetails} />
+                    : null
+            }
+            <Grid container direction="column" spacing={2}>
+                <Grid item>
+                    <JPTable
                             sortedkey="funcName"
                             data={getDataFunctionality()} 
                             updateData={updateFunctionalities} 
@@ -521,59 +642,59 @@ export const DigitalTwinMonitoring = () => {
                                     action: showEditing
                                 },
                                 details: {
-                                    action: redirectToList
+                                    action: redirectToList,
                                 },
                                 add: {
                                     action: showAddDetails
                                 }
                             }} 
-                        />
-                      </Grid>
-                    <Grid item xs>
-                        New Functionality
+                    />
+                </Grid>
+                <Grid item xs>
+                    New Functionality
+                </Grid>
+                <Grid item> 
+                    <Grid container item xs>
+                    <Grid className={classes.box} spacing={1} item container direction="row">
+                        <Grid item xs={4}>
+                            <TextField
+                                helperText={!validNewFunc ? NEW_FUNCTIONALITY_RE.toString() : ''}
+                                error={!validNewFunc}
+                                label="Insert new functionality name" 
+                                required
+                                onChange={(event) => {
+                                    setNewFunc(event.target.value)
+                                    if(!validNewFunc)
+                                        setValidNewFunc(isFunctionalityValid(event.target.value.trim()))
+                                }}
+                                fullWidth
+                                value={newFunc}
+                            />
+                        </Grid>
+                        <Grid item xs={4}>
+                            <InputLabel id={`digital-twin-label-${newFunc}`}>Digital Twin</InputLabel>
+                            <Select labelId={`digital-twin-label-${newFunc}`} value={digitalTwinChoice} onChange={handleDigitalTwinChoice}>
+                            {(digitalTwins || []).map((digitalTwin: any) => {return <MenuItem key={digitalTwin.dtId} value={digitalTwin.dtName}>{digitalTwin.dtName}</MenuItem>})}
+                            </Select>
+                        </Grid>
+                        <Grid container justify="flex-end" spacing={1}>
+                            <Grid item>
+                                <Button
+                                color="primary"
+                                variant="contained"
+                                onClick={validateAndCreate}
+                                >
+                                Add Functionality
+                                </Button>
+                            </Grid>
+                        </Grid>
                     </Grid>
-                     <Grid item> 
-                        <Grid container item xs>
-                            <Grid className={classes.box} spacing={1} item container direction="row">
-                            <Grid item xs={4}>
-                                <TextField
-                                    helperText={!validNewFunc ? NEW_FUNCTIONALITY_RE.toString() : ''}
-                                    error={!validNewFunc}
-                                    label="Insert new functionality name" 
-                                    required
-                                    onChange={(event) => {
-                                        setNewFunc(event.target.value)
-                                        if(!validNewFunc)
-                                            setValidNewFunc(isFunctionalityValid(event.target.value.trim()))
-                                    }}
-                                    fullWidth
-                                    value={newFunc}
-                                />
-                            </Grid>
-                            <Grid item xs={4}>
-                                <InputLabel id={`digital-twin-label-${newFunc}`}>Digital Twin</InputLabel>
-                                <Select labelId={`digital-twin-label-${newFunc}`} value={digitalTwinChoice} onChange={handleDigitalTwinChoice}>
-                                {(digitalTwins || []).map((digitalTwin: any) => {return <MenuItem key={digitalTwin.dtId} value={digitalTwin.dtName}>{digitalTwin.dtName}</MenuItem>})}
-                                </Select>
-                            </Grid>
-                            <Grid container justify="flex-end" spacing={1}>
-                             <Grid item>
-                                 <Button
-                                    color="primary"
-                                    variant="contained"
-                                    onClick={validateAndCreate}
-                                 >
-                                    Add Functionality
-                                 </Button>
-                             </Grid>
-                         </Grid>
-                        </Grid>
-                        </Grid>
-                     </Grid>
+                    </Grid>
                  </Grid>
-             </>
-         </LazyComponent>
-     </>
- </Navigator>
+            </Grid>
+        </>
+        </LazyComponent>
+    </>
+    </Navigator>
  )
 }

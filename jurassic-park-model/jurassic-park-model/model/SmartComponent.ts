@@ -1,4 +1,4 @@
-import { FunctionBlock, FBCategory, FBGeneralCategory } from "./FunctionBlock"
+import { FBGeneralCategory } from "./FunctionBlock"
 
 export interface FbInstance {
     id:string
@@ -6,6 +6,18 @@ export interface FbInstance {
     fbCategory?: string
     fbGeneralCategory?: FBGeneralCategory | ''
     state: number
+}
+
+export interface MonitoredVariableInstance {
+    id: string
+    monitoredVariableName: string
+    currentValue: number
+}
+
+export interface MonitoredEventInstance {
+    id: string
+    monitoredEventName: string
+    currentValue: number
 }
 
 export interface SmartComponent {
@@ -28,5 +40,6 @@ export interface SmartComponent {
     memUsed?: number
 
     fbInstances?: FbInstance []
-
+    monitoredVariableInstances?: MonitoredVariableInstance []
+    monitoredEventInstances?: MonitoredEventInstance []
 }

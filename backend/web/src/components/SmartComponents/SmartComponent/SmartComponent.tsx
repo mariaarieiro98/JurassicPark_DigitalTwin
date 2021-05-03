@@ -100,9 +100,9 @@ const MainComponent = withTheme((props:{theme:Theme, error:string, setError:Func
     } 
 
     const updateSmartComponent = (data: any) => {
-
+    
         const sc : SmartComponent = data.sc
-        
+      
         if(smartComponentName !== sc.scName)
             setSmartComponentName(sc.scName)
         if(smartComponentState !== sc.scState)
@@ -129,7 +129,6 @@ const MainComponent = withTheme((props:{theme:Theme, error:string, setError:Func
     }
 
     const updateSmartComponentFunctionBlockInstances = (instances: FbInstance[]) => {
-
         setSmartComponentFbInstances(instances)
 
     }

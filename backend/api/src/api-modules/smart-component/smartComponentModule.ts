@@ -21,7 +21,6 @@ smartComponentModule.addRoute({
 
                 let response : RequestResponse = new RequestResponse()
                 await smartComponentMainController.getSmartObjectSData(response)
-                //console.log(response)
                 res.json(response.get())
             }
     

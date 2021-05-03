@@ -1,9 +1,11 @@
+import { argv } from 'node:process'
 import socketIOClient from 'socket.io-client'
 
 export enum SOCKET_EVENT {
-    UPDATED_SC_EVENT = "smart-component-updated",
-    EDITED_FBI_EVENT = "smart-component-fbi-updated",
-    INITIAL_DATA = "initial-data"
+    UPDATED_SC_EVENT = 'smart-component-updated',
+    EDITED_FBI_EVENT = 'smart-component-fbi-updated',
+    INITIAL_DATA = 'initial-data',
+    EDITED_MVI_EVENT = 'smart-component-mvi-updated'
 }
 
 export class SocketConnection {
@@ -85,4 +87,14 @@ export class SocketConnection {
         this.socket?.on(event,listener)
     }
 
+    public emit(event: SOCKET_EVENT, data: any) {
+
+        // this.socket?.emit("ferret", data, (data: any) => {
+        //     console.log(data); // data will be "woot"
+        // })
+
+        this.socket?.emit(event, data , (data: any) => {
+            console.log(data); 
+        })
+    }
 } 

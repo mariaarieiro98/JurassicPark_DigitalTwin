@@ -25,12 +25,16 @@ export enum OPCUA_HW_MONITORING {
     memUsed = 'MEM_USED',
 }
 
-
 export enum FUNCTION_BLOCK_FOLDERS {
     SENSORS = 'DeviceSet',
     INTERFACE = 'PointSet',
     SERVICES = 'ServiceInstanceSet'
 }
+
+export enum DEVICE_SET_FOLDERS {
+    VARIABLES = 'Variables'
+}
+
 
 export const HARDWARE_MONITORING_FOLDER = 'HardwareMonitoring'
 
@@ -322,4 +326,54 @@ export class OpcUaClient {
 
     }
 
+    public getAllMonitoredVariableInstances() : Promise<{id:string, monitoredVariableName: string, currentValue: number}[]> {
+
+        return new Promise(async(res:Function, rej:Function) => {
+
+            try {
+
+                const variables = await this.getMonitoredVariableInstances(FUNCTION_BLOCK_FOLDERS.SENSORS)
+                res([...variables])
+
+            }
+
+            catch(err) {
+                console.error(err)
+                rej(err)
+            }
+  
+        })
+
+    }
+
+    //Lê a informação relativa à variável VALUE
+    private getMonitoredVariableInstances(folder: string) : Promise<{id:string, monitoredVariableName: string, currentValue: number}[]> {
+
+        return new Promise(async(res:Function, rej:Function) => {
+
+            try {
+                const deviceSetNodeId = `${OpcUaClient.NAME_SPACE};s=${this.device}:${folder}`
+                const browseResult = await this.opcuaSession.browse(deviceSetNodeId);
+                
+                const result : {id:string, monitoredVariableName: string, currentValue: number}[] = []
+        
+                for(const reference of browseResult.references) {
+                    const id = reference.displayName.text
+                    const currentValue = (await this.opcuaSession.read({nodeId:`${OpcUaClient.NAME_SPACE};s=${reference.browseName.name}:Variables:VALUE`})).value.value
+                    const monitoredVariableName =  (await this.opcuaSession.read({nodeId:`${OpcUaClient.NAME_SPACE};s=${reference.browseName.name}:Variables:VALUE`, attributeId: AttributeIds.DisplayName})).value.value.text             
+                    //this.addFunctionBlockStateMonitorItem(reference.browseName.name)
+                    result.push({id,currentValue,monitoredVariableName})
+                }
+
+                res(result)
+
+            }
+
+            catch(err) {
+                rej(err)
+            }
+
+        })
+
+    }
 }

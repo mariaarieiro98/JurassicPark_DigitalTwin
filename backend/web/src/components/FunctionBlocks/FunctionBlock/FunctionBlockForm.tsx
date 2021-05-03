@@ -17,7 +17,7 @@ const DEFAULT_VALUES = {
     eventType: 'Event'
 }
 
-const updateEventVariablesOnRemoveVariable = (events:Event[],variableToRemove:Variable, ) : Event[] => {
+const updateEventVariablesOnRemoveVariable = (events:Event[], variableToRemove:Variable, ) : Event[] => {
 
     const newEvents : Event[] = [...events]
     newEvents.forEach((event: Event) => {
@@ -164,7 +164,7 @@ export const FunctionBlockForm = (props: FunctionBlockFormProps) => {
         eventInoutType: type,
         eventName: '',
         eventType:DEFAULT_VALUES.eventType,
-        eventVariables: []
+        eventVariables: [] 
     })
 
     const [newInputEvent,setNewInputEvent] : [Event,Function] = useState(getEmptyEvent(InOutType.in))
@@ -197,7 +197,7 @@ export const FunctionBlockForm = (props: FunctionBlockFormProps) => {
     
     },[setFbInputEvents])
     
-    const onOutputVariableEdition = useCallback((oldVariable:Variable, newVariable: Variable) => {
+      const onOutputVariableEdition = useCallback((oldVariable:Variable, newVariable: Variable) => {
     
         setFbOutputEvents((prevEvents: Event[]) => updateEventVariablesOnUpdateVariable(prevEvents,oldVariable,newVariable))
         setNewOutputEvent((pevEvent: Event) => updateEventVariablesOnUpdateVariable([pevEvent],oldVariable,newVariable)[0])

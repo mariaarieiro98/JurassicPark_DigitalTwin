@@ -38,6 +38,11 @@ class SocketEngine {
             if ((_a = socketInterface.initializer) === null || _a === void 0 ? void 0 : _a.action)
                 socketInterface.initializer.action();
             socket.emit('initial-data', (_b = socketInterface.initializer) === null || _b === void 0 ? void 0 : _b.data());
+            socket.on('smart-component-mvi-updated', (variable, fn) => {
+                var _a;
+                (_a = socketInterface.variable) === null || _a === void 0 ? void 0 : _a.sendVariableToServer(variable);
+                fn("woot");
+            });
             socket.on("disconnect", () => {
                 socket.disconnect();
             });
