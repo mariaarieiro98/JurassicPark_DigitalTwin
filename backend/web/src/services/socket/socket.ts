@@ -87,14 +87,9 @@ export class SocketConnection {
         this.socket?.on(event,listener)
     }
 
-    public emit(event: SOCKET_EVENT, data: any) {
-
-        // this.socket?.emit("ferret", data, (data: any) => {
-        //     console.log(data); // data will be "woot"
-        // })
-
-        this.socket?.emit(event, data , (data: any) => {
-            console.log(data); 
-        })
-    }
+    // public emit(event: SOCKET_EVENT, data: any) {
+    //     this.socket?.emit(event, data , (data: any) => {
+    //         console.log(data); 
+    //     })
+    // }
 } 

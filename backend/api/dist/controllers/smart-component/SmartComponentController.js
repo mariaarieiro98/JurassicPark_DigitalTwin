@@ -21,12 +21,6 @@ class SmartComponentController {
                 return this.data;
             }
         };
-        this.variable = {
-            data: () => {
-                return this.data;
-            },
-            sendVariableToServer: (variable) => void {}
-        };
         this.setConnected = () => {
             this.data.scState = 'connected';
             this.notifyClientScUpdated();
@@ -73,7 +67,6 @@ class SmartComponentController {
         this.opcuaController = new opcuaClient_1.OpcUaClient(address, port);
         this.opcuaController.registerObserver(this);
         this.namespace = `${SmartComponentController.BASE_NAME_SPACE}/${id}`;
-        //this.variable = SmartComponentController.EDITED_MVI_EVENT
         this.data = {
             scAddress: address,
             scPort: port,
@@ -127,6 +120,7 @@ class SmartComponentController {
                         fbType: element.fbType
                     };
                 });
+                //console.log("this.data.fbInstances", this.data.fbInstances)
                 this.notifyClientFBIUpdated();
             }
             catch (err) {
@@ -142,12 +136,26 @@ class SmartComponentController {
         });
         this.notifyClientFBIUpdated();
     }
+    notifyMonitoredVariablesCurrentValueChanged(monitoredVariableInstanceId, value, variable) {
+        this.data.monitoredVariableInstances = this.data.monitoredVariableInstances.map((instance) => {
+            if ((instance.id === monitoredVariableInstanceId) && (instance.monitoredVariableName === variable))
+                instance.currentValue = value;
+            return instance;
+        });
+        this.notifyClientMonitoredVariableValueUpdated();
+    }
     //Lê a informação relativa à variável VALUE
     readMonitoredVariablesAndNotifyClient() {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                console.log("this.variable.sendVariableToServer: ", this.initializer.data);
-                const monitoredVariableValues = yield this.opcuaController.getAllMonitoredVariableInstances();
+                const monitoredVariables = (yield digitalTwinMainController_1.digitalTwinMainController.getMonitoredVariable(new request_1.RequestResponse())).getResult().map((monVar) => ({ monitoredVariableName: monVar.monitoredVariableName, scAssociated: monVar.scAssociated }));
+                let i = 0;
+                const monitoredVariablesName = [];
+                while (i < monitoredVariables.length) {
+                    monitoredVariablesName[i] = monitoredVariables[i].monitoredVariableName;
+                    i++;
+                }
+                const monitoredVariableValues = yield this.opcuaController.getAllMonitoredVariableInstances(monitoredVariablesName);
                 const promisesMVI = [];
                 monitoredVariableValues.forEach((element) => {
                     promisesMVI.push(digitalTwinMainController_1.digitalTwinMainController.getMonitoredVariable(new request_1.RequestResponse(), [{ key: 'monitoredVariableName', value: element.monitoredVariableName }]));
@@ -159,7 +167,8 @@ class SmartComponentController {
                     return {
                         id: element.id,
                         currentValue: element.currentValue,
-                        monitoredVariableName: element.monitoredVariableName
+                        monitoredVariableName: element.monitoredVariableName,
+                        sc: element.sc
                     };
                 });
                 this.notifyClientMonitoredVariableValueUpdated();
@@ -171,10 +180,10 @@ class SmartComponentController {
     }
 }
 exports.SmartComponentController = SmartComponentController;
-SmartComponentController.EDITED_SC_EVENT = "smart-component-updated";
-SmartComponentController.EDITED_FBI_EVENT = "smart-component-fbi-updated";
+SmartComponentController.EDITED_SC_EVENT = 'smart-component-updated';
+SmartComponentController.EDITED_FBI_EVENT = 'smart-component-fbi-updated';
 SmartComponentController.BASE_NAME_SPACE = 'smart-component';
-SmartComponentController.EDITED_MVI_EVENT = "smart-component-mvi-updated";
+SmartComponentController.EDITED_MVI_EVENT = 'smart-component-mvi-updated';
 SmartComponentController.buildSmartComponentController = (address, port, id, name, type) => {
     return new Promise((res, rej) => {
         const smartComponentController = new SmartComponentController(address, port, id, name, type);

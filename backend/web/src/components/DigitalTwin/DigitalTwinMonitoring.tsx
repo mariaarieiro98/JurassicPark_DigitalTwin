@@ -11,13 +11,12 @@ import { useStore } from '../templates/Store/Store'
 import { FunctionalityActions , DigitalTwinActions, AssociatedSmartComponentActions, MonitoredVariableActions, MonitoredEventActions} from '../../redux/actions'
 import { RequestResponseState } from '../../services/api/api'
 import { TextField, Grid, Button, Box, Dialog, DialogTitle, CircularProgress , Select, InputLabel, MenuItem } from '@material-ui/core'
-import { createFunctionality, createMonitoredEvent, createMonitoredVariable, updateFunctionality } from '../../services/api/digital-twin'
+import { createFunctionality, createMonitoredEvent, createMonitoredVariable, createVariableToMonitor, updateFunctionality } from '../../services/api/digital-twin'
 import { deleteFunctionality} from '../../services/api/digital-twin'
 import { useDialogStyles } from '../FunctionBlockCategories/List/style'
 import { CheckCircle, Error } from '@material-ui/icons'
 import { useFunctionBlockStyles } from '../FunctionBlocks/FunctionBlock/style'
 import { Redirect } from 'react-router-dom'
-// import { FunctionalityForm } from './FunctionalityForm'
 
 const NEW_FUNCTIONALITY_RE = /[a-zA-Z0-9]{3,}/
 const FUNCTION_BLOCK_RE = /[a-zA-Z0-9]{3,}/
@@ -28,6 +27,13 @@ let functionalityId = -1
 let idMonitoredVariable = -1
 let idMonitoredEvent = -1
 const funcUserId = 1
+
+interface MonitoredEventsWithNumber extends MonitoredEvent {
+    currentNumber: {
+        key: string | undefined
+        data: number
+    }
+}
 
 const EditFunctionalityDialog = (props: {func: Functionality, onGood: (newFunc: Functionality) => void, onError: () => void, onCancel: () => void}) => {
 
@@ -227,17 +233,22 @@ const AddFunctionalityDetails = (props: {func: Functionality, onGood: (newFunc: 
                 if(newVariable!=''){
 
                     createMonitoredVariable(monitoredVariable)
+                        .then((response: RequestResponseState) => {
+                            setResult({done:true, good: true, message: response.msg})
+                        })
+                        .catch((error: RequestResponseState) => {
+                            setResult({done: true, good: false, message: error.msg})
+                        })
+                        .finally(() => setSending(false))
 
-  
-                    .then((response: RequestResponseState) => {
-                        setResult({done:true, good: true, message: response.msg})
-                    })
-  
-                    .catch((error: RequestResponseState) => {
-                        setResult({done: true, good: false, message: error.msg})
-                    })
-  
-                    .finally(() => setSending(false))
+                    createVariableToMonitor(newVariable)
+                        .then((response: RequestResponseState) => {
+                            setResult({done:true, good: true, message: response.msg})
+                        })
+                        .catch((error: RequestResponseState) => {
+                            setResult({done: true, good: false, message: error.msg})
+                        })
+                        .finally(() => setSending(false))
                 }
                 
 
@@ -374,14 +385,14 @@ export const DigitalTwinMonitoring = () => {
   const {data:monitoredVariables, dispatchAction:dispatchMonitoredVariableActions} = useStore('monitoredVariables')
   const {data:monitoredEvents, dispatchAction:dispatchMonitoredEventActions} = useStore('monitoredEvents')
 
+  const [numberOfMonitoredEvents,setNumberOfMonitoredEvents] : [MonitoredEventsWithNumber[],Function] = useState([])
+
   const onCancel = () => setError('')
 
   const updateFunctionalities = (funcs: Functionality[]) => dispatchFunctionalityActions(FunctionalityActions.updateFunctionalities(funcs))
   const updateDigitalTwins = (dts: DigitalTwin[]) => dispatchDigitalTwinActions(DigitalTwinActions.updateDigitalTwins(dts))
   const updateMonitoredVariables = (monVars: MonitoredVariable[]) => dispatchMonitoredVariableActions(MonitoredVariableActions.updateMonitoredVariable(monVars))
-  const updateMonitoredEvents = (monEvs: MonitoredEvent[]) => {
-      dispatchMonitoredEventActions(MonitoredEventActions.updateMonitoredEvent(monEvs))
-  }
+  const updateMonitoredEvents = (monEvs: MonitoredEvent[]) => dispatchMonitoredEventActions(MonitoredEventActions.updateMonitoredEvent(monEvs))  
   
   const addFunc = () => dispatchFunctionalityActions(FunctionalityActions.addFunctionality({funcId: functionalityId, funcUserId: 1 , funcName: newFunc, funcdtId: 1}))
  
@@ -576,7 +587,7 @@ export const DigitalTwinMonitoring = () => {
     }, 0)
    })
 
-  // Recuperar da base de dados as monitoredVariables (MonitoredVariable)
+  // Recuperar da base de dados os monitoredEvents (MonitoredEvent)
    useMountEffect(() => {
 
     setTimeout(() => {
@@ -588,8 +599,12 @@ export const DigitalTwinMonitoring = () => {
         .finally(() => setFetching(false))
     }, 0)
   })
+
   
   const redirectToList = (func : Functionality) => setRedirectTo(func.funcId)
+  const indexes_test = [
+    {label: 'delete', key: 'delete'},
+  ]
 
   if(redirectTo !== -1) 
   return  <Redirect to={`/functionality-details/${redirectTo}`} push={true}/>

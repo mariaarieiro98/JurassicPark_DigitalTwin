@@ -22,6 +22,7 @@ interface SmartComponentWithDataState extends SmartComponent {
     }
 }
 
+
 export const SmartComponentList = () : React.ReactElement => {
     
     const classes = useSmartComponentStyles()
@@ -72,6 +73,7 @@ export const SmartComponentList = () : React.ReactElement => {
     const updateSmartObjects = (scs:SmartComponent[]) => setSmartComponents(getComponentsWithStateData(scs))
 
     const updateSmartComponent = (sc: SmartComponent) => {
+        console.log("sc:", sc)
 
         setSmartComponents((prevComponents: SmartComponentWithDataState[]) => {
 

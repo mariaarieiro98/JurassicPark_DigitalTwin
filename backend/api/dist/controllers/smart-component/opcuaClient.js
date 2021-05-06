@@ -36,10 +36,6 @@ var FUNCTION_BLOCK_FOLDERS;
     FUNCTION_BLOCK_FOLDERS["INTERFACE"] = "PointSet";
     FUNCTION_BLOCK_FOLDERS["SERVICES"] = "ServiceInstanceSet";
 })(FUNCTION_BLOCK_FOLDERS = exports.FUNCTION_BLOCK_FOLDERS || (exports.FUNCTION_BLOCK_FOLDERS = {}));
-var DEVICE_SET_FOLDERS;
-(function (DEVICE_SET_FOLDERS) {
-    DEVICE_SET_FOLDERS["VARIABLES"] = "Variables";
-})(DEVICE_SET_FOLDERS = exports.DEVICE_SET_FOLDERS || (exports.DEVICE_SET_FOLDERS = {}));
 exports.HARDWARE_MONITORING_FOLDER = 'HardwareMonitoring';
 class OpcUaClient {
     constructor(address, port) {
@@ -47,6 +43,7 @@ class OpcUaClient {
         this.connected = false;
         this.device = '';
         this.monitoredItems = {};
+        this.monitoredVariableInstances = {};
         this.monitoredFunctionBlockInstances = {};
         this.buildNodeId = (item) => `${OpcUaClient.NAME_SPACE};s=${this.device}.${item}`;
         this.buildHardWareMonitoringNodeId = (item) => `${OpcUaClient.NAME_SPACE};s=${this.device}:${exports.HARDWARE_MONITORING_FOLDER}:${item}`;
@@ -168,6 +165,15 @@ class OpcUaClient {
             });
         });
     }
+    addMonitoredVariableCurrentValueMonitorItem(monitoredVarialeInstanceId, variable) {
+        const itemToMonitor = { nodeId: `${OpcUaClient.NAME_SPACE};s=${monitoredVarialeInstanceId}:Variables:${variable}` };
+        this.monitoredVariableInstances[monitoredVarialeInstanceId] = node_opcua_1.ClientMonitoredItem.create(this.subscription, itemToMonitor, OpcUaClient.monitoringParametersOptions, node_opcua_1.TimestampsToReturn.Both);
+        this.monitoredVariableInstances[monitoredVarialeInstanceId].on('changed', (dataValue) => {
+            this.observers.forEach((observer) => {
+                observer.notifyMonitoredVariablesCurrentValueChanged(monitoredVarialeInstanceId, dataValue.value.value, variable);
+            });
+        });
+    }
     addMonitorItemObserver(item) {
         const monitoredItem = this.monitoredItems[item];
         monitoredItem.on("changed", (dataValue) => {
@@ -193,6 +199,43 @@ class OpcUaClient {
             }
         }));
     }
+    getAllMonitoredVariableInstances(variable) {
+        return new Promise((res, rej) => __awaiter(this, void 0, void 0, function* () {
+            try {
+                const variables = yield this.getMonitoredVariableInstances(FUNCTION_BLOCK_FOLDERS.SENSORS, variable);
+                res([...variables]);
+            }
+            catch (err) {
+                console.error(err);
+                rej(err);
+            }
+        }));
+    }
+    //Lê a informação relativa à variável VALUE
+    getMonitoredVariableInstances(folder, variables) {
+        return new Promise((res, rej) => __awaiter(this, void 0, void 0, function* () {
+            try {
+                const deviceSetNodeId = `${OpcUaClient.NAME_SPACE};s=${this.device}:${folder}`;
+                const browseResult = yield this.opcuaSession.browse(deviceSetNodeId);
+                const result = [];
+                variables.reverse();
+                for (const reference of browseResult.references) {
+                    for (const variable of variables) {
+                        const id = reference.browseName.name;
+                        const currentValue = (yield this.opcuaSession.read({ nodeId: `${OpcUaClient.NAME_SPACE};s=${reference.browseName.name}:Variables:${variable}` })).value.value;
+                        const monitoredVariableName = (yield this.opcuaSession.read({ nodeId: `${OpcUaClient.NAME_SPACE};s=${reference.browseName.name}:Variables:${variable}`, attributeId: node_opcua_1.AttributeIds.DisplayName })).value.value.text;
+                        const sc = this.device;
+                        this.addMonitoredVariableCurrentValueMonitorItem(reference.browseName.name, variable);
+                        result.push({ id, currentValue, monitoredVariableName, sc });
+                    }
+                }
+                res(result);
+            }
+            catch (err) {
+                rej(err);
+            }
+        }));
+    }
     getFunctionBlockInstances(folder) {
         return new Promise((res, rej) => __awaiter(this, void 0, void 0, function* () {
             try {
@@ -205,39 +248,6 @@ class OpcUaClient {
                     const fbType = (yield this.opcuaSession.read({ nodeId: `${OpcUaClient.NAME_SPACE};s=${reference.browseName.name}.dID` })).value.value;
                     this.addFunctionBlockStateMonitorItem(reference.browseName.name);
                     result.push({ id, state, fbType });
-                }
-                res(result);
-            }
-            catch (err) {
-                rej(err);
-            }
-        }));
-    }
-    getAllMonitoredVariableInstances() {
-        return new Promise((res, rej) => __awaiter(this, void 0, void 0, function* () {
-            try {
-                const variables = yield this.getMonitoredVariableInstances(FUNCTION_BLOCK_FOLDERS.SENSORS);
-                res([...variables]);
-            }
-            catch (err) {
-                console.error(err);
-                rej(err);
-            }
-        }));
-    }
-    //Lê a informação relativa à variável VALUE
-    getMonitoredVariableInstances(folder) {
-        return new Promise((res, rej) => __awaiter(this, void 0, void 0, function* () {
-            try {
-                const deviceSetNodeId = `${OpcUaClient.NAME_SPACE};s=${this.device}:${folder}`;
-                const browseResult = yield this.opcuaSession.browse(deviceSetNodeId);
-                const result = [];
-                for (const reference of browseResult.references) {
-                    const id = reference.displayName.text;
-                    const currentValue = (yield this.opcuaSession.read({ nodeId: `${OpcUaClient.NAME_SPACE};s=${reference.browseName.name}:Variables:VALUE` })).value.value;
-                    const monitoredVariableName = (yield this.opcuaSession.read({ nodeId: `${OpcUaClient.NAME_SPACE};s=${reference.browseName.name}:Variables:VALUE`, attributeId: node_opcua_1.AttributeIds.DisplayName })).value.value.text;
-                    //this.addFunctionBlockStateMonitorItem(reference.browseName.name)
-                    result.push({ id, currentValue, monitoredVariableName });
                 }
                 res(result);
             }

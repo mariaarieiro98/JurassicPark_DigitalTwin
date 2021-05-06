@@ -12,12 +12,14 @@ export interface MonitoredVariableInstance {
     id: string
     monitoredVariableName: string
     currentValue: number
+    sc: string
 }
 
 export interface MonitoredEventInstance {
     id: string
     monitoredEventName: string
     currentValue: number
+    sc: string
 }
 
 export interface SmartComponent {

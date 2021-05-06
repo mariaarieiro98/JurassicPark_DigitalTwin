@@ -291,6 +291,27 @@ class DigitalTwinMainController {
                 }
             }));
         };
+        this.removeMonitoredVariable = (id, response) => {
+            return new Promise((res, rej) => __awaiter(this, void 0, void 0, function* () {
+                try {
+                    console.log("id:", id);
+                    const oldMonitoredVariable = (yield database_1.DatabaseUtils.executeStatement('SELECT monitoredVariableName FROM MonitoredVariable WHERE idMonitoredVariable = ?', [id])).result[0];
+                    if (!oldMonitoredVariable) {
+                        response.setErrorState('No monitored-variable found');
+                        rej(response);
+                        return;
+                    }
+                    const deleteMonitoredVariableStmt = 'DELETE FROM MonitoredVariable WHERE idMonitoredVariable = ?';
+                    yield database_1.DatabaseUtils.executeStatement(deleteMonitoredVariableStmt, [id]);
+                    res(response);
+                }
+                catch (error) {
+                    console.error(error);
+                    response.setErrorState('Error Deleting Monitored Variable', model_1.GeneralErrors.general.code);
+                    rej(response);
+                }
+            }));
+        };
         this.createMonitoredVariable = (monitoredVariable, response) => {
             return new Promise((res, rej) => __awaiter(this, void 0, void 0, function* () {
                 try {
@@ -349,6 +370,21 @@ class DigitalTwinMainController {
                 catch (error) {
                     console.error(error);
                     response.setErrorState('Error Creating MonitoredEvent', model_1.GeneralErrors.general.code);
+                    rej(response);
+                }
+            }));
+        };
+        this.createVariableToMonitor = (monitoredVariable, response) => {
+            return new Promise((res, rej) => __awaiter(this, void 0, void 0, function* () {
+                try {
+                    const insertVariableToMonitor = 'Insert INTO VariableToMonitor(variableName) VALUES(?)';
+                    const result = yield database_1.DatabaseUtils.executeStatement(insertVariableToMonitor, [monitoredVariable]);
+                    response.setExtra({ lastInsertedId: result.result.insertId });
+                    res(response);
+                }
+                catch (error) {
+                    console.error(error);
+                    response.setErrorState('Error Creating VariableToMonitor', model_1.GeneralErrors.general.code);
                     rej(response);
                 }
             }));

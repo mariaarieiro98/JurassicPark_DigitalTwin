@@ -1,4 +1,4 @@
-import { FunctionBlock, FBCategory, DigitalTwin , Functionality, SmartComponent, MonitoredVariable, MonitoredEvent} from "../model"
+import { FunctionBlock, FBCategory, DigitalTwin , Functionality, SmartComponent, MonitoredVariable, MonitoredEvent, MonitoredVariableInstance, VariableToMonitor} from "../model"
 import { AssociatedSmartComponent } from "../model/model/AssociatedSmartComponent"
 
 export interface Action {
@@ -38,6 +38,7 @@ export const ACTION_TYPES = {
 
     SMART_COMPONENT: {
         UPDATE_SMART_COMPONENTS: 'UPDATE_SMART_COMPONENTS',
+        UPDATE_MONITORED_VARIABLES: 'UPDATE_MONITORED_VARIABLES',
         ADD_SMART_COMPONENTS: 'ADD_SMART_COMPONENTS',
     },
 
@@ -48,6 +49,7 @@ export const ACTION_TYPES = {
 
     MONITORED_VARIABLE: {
         UPDATE_MONITORED_VARIABLES: 'UPDATE_MONITORED_VARIABLES',
+        DELETE_MONITORED_VARIABLES: 'DELETE_MONITORED_VARIABLES',
         ADD_MONITORED_VARIABLES: 'ADD_MONITORED_VARIABLES',
     },
 
@@ -55,6 +57,16 @@ export const ACTION_TYPES = {
         UPDATE_MONITORED_EVENTS: 'UPDATE_MONITORED_EVENTS',
         ADD_MONITORED_EVENTS: 'ADD_MONITORED_EVENTS',
     }, 
+
+    MONITORED_VARIABLE_INSTANCE: {
+        UPDATE_MONITORED_VARIABLE_INSTANCES: 'UPDATE_MONITORED_VARIABLE_INSTANCES',
+        ADD_MONITORED_VARIABLE_INSTANCES: 'ADD_MONITORED_VARIABLE_INSTANCES',
+    },
+
+    VARIABLE_TO_MONITOR: {
+        UPDATE_VARIABLES_TO_MONITOR: 'UPDATE_VARIABLES_TO_MONITOR',
+        ADD_VARIABLES_TO_MONITOR: 'ADD_VARIABLES_TO_MONITOR',
+    }
 }
 
 export class FunctionBlockActions {
@@ -180,6 +192,14 @@ export class SmartComponentActions {
         }
     }
 
+    static updateMonitoredVariable = (monitoredVariable: SmartComponent[]) : Action => {
+        
+        return {
+            type: ACTION_TYPES.SMART_COMPONENT.UPDATE_MONITORED_VARIABLES,
+            payload: monitoredVariable
+        }
+    }
+
     static addSmartComponent = (smartComponent: SmartComponent) : Action => {
         
         return {
@@ -220,10 +240,18 @@ export class MonitoredVariableActions {
         }
     }
 
+    static deleteMonitoredVariable = (monitoredVariable: MonitoredVariable) : Action => ({
+
+        type: ACTION_TYPES.MONITORED_VARIABLE.DELETE_MONITORED_VARIABLES,
+        payload: monitoredVariable
+
+    })
+
+
     static addMonitoredVariable = (monitoredVariable: MonitoredVariable) : Action => {
         
         return {
-            type: ACTION_TYPES.MONITORED_VARIABLE.UPDATE_MONITORED_VARIABLES,
+            type: ACTION_TYPES.MONITORED_VARIABLE.ADD_MONITORED_VARIABLES,
             payload: monitoredVariable
         }
     }
@@ -243,8 +271,48 @@ export class MonitoredEventActions {
     static addMonitoredEvent = (monitoredEvent: MonitoredEvent) : Action => {
         
         return {
-            type: ACTION_TYPES.MONITORED_EVENT.UPDATE_MONITORED_EVENTS,
+            type: ACTION_TYPES.MONITORED_EVENT.ADD_MONITORED_EVENTS,
             payload: monitoredEvent
+        }
+    }
+
+}
+
+export class MonitoredVariableInstanceActions {
+
+    static updateMonitoredVariableInstance = (monitoredVariableInstance: MonitoredVariableInstance[]) : Action => {
+        
+        return {
+            type: ACTION_TYPES.MONITORED_VARIABLE_INSTANCE.UPDATE_MONITORED_VARIABLE_INSTANCES,
+            payload: monitoredVariableInstance
+        }
+    }
+
+    static addMonitoredVariableInstance = (monitoredVariableInstance: MonitoredVariableInstance) : Action => {
+        
+        return {
+            type: ACTION_TYPES.MONITORED_VARIABLE_INSTANCE.ADD_MONITORED_VARIABLE_INSTANCES,
+            payload: monitoredVariableInstance
+        }
+    }
+
+}
+
+export class VariableToMonitorActions {
+
+    static updateVariableToMonitor = (monitoredVariable: VariableToMonitor[]) : Action => {
+        
+        return {
+            type: ACTION_TYPES.VARIABLE_TO_MONITOR.UPDATE_VARIABLES_TO_MONITOR,
+            payload: monitoredVariable
+        }
+    }
+
+    static addVariableToMonitor = (monitoredVariable: VariableToMonitor) : Action => {
+        
+        return {
+            type: ACTION_TYPES.VARIABLE_TO_MONITOR.ADD_VARIABLES_TO_MONITOR,
+            payload: monitoredVariable
         }
     }
 

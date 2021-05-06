@@ -3,7 +3,7 @@ import { ApiModule } from "../module"
 import { Api, FRequest } from '../../Api';
 import { RequestResponse, checkParameters } from '../../utils/request';
 import { digitalTwinMainController } from '../../controllers/digital-twin/digitalTwinMainController';
-import { Functionality, MonitoredEvent } from '../../model';
+import { Functionality, MonitoredEvent, VariableToMonitor } from '../../model';
 import { AssociatedSmartComponent } from '../../model/model/AssociatedSmartComponent';
 import { MonitoredVariable } from '../../model/model/MonitoredVariable';
 
@@ -288,21 +288,6 @@ digitalTwinModule.addRoute({
     withAuthentication: false,
     mountRoute: (api: Api) => {
 
-        // api.app.post('/associated-smart-components', async (req: FRequest, res: express.Response) => {
-
-        //     try {
-        //         let response : RequestResponse = await checkParameters(['assSc','scDtId'],req.body)
-        //         await digitalTwinMainController.createAssociatedSmartComponent(req.body.assSc,req.body.scDtId,response)
-        //         res.json(response.get())
-        //     }
-    
-        //     catch(error) {
-        //         console.error(error)
-        //         res.status(400)
-        //         res.json(error)
-        //     }
-        // })
-
         api.app.post('/associated-smart-components/', async (req: FRequest, res: express.Response) => {
 
             try {
@@ -410,6 +395,34 @@ digitalTwinModule.addRoute({
 
 digitalTwinModule.addRoute({
     
+    path: /^\/monitored-variable\/-?[0-9]+\/?$/,
+    method: 'delete',
+    withAuthentication: false,
+    mountRoute: (api: Api) => {
+
+        api.app.delete('/monitored-variable/:id', async (req: FRequest, res: express.Response) => {
+
+            try {
+                console.log(req.params.id)
+                
+                let response : RequestResponse = await checkParameters(['id'],req.params)
+                await digitalTwinMainController.removeMonitoredVariable(parseInt(req.params.id),response)
+                res.json(response.get())
+            }
+    
+            catch(error) {
+                console.error(error)
+                res.status(400)
+                res.json(error)
+            }
+
+        })
+
+    }
+})
+
+digitalTwinModule.addRoute({
+    
     path: /^\/monitored-event\/?$/,
     method: 'get',
     withAuthentication: false,
@@ -447,6 +460,56 @@ digitalTwinModule.addRoute({
                 let response : RequestResponse = await checkParameters(['funcIdAssociated' ,'fbAssociated', 'idMonitoredEvent', 'monitoredEventName'],req.body)
                 const monitoredEvent : MonitoredEvent = req.body
                 await digitalTwinMainController.createMonitoredEvent(monitoredEvent,response)
+                res.json(response.get())
+            }
+    
+            catch(error) {
+                console.error(error)
+                res.status(400)
+                res.json(error)
+            }
+        })
+
+    }
+})
+
+digitalTwinModule.addRoute({
+    
+    path: /^\/variable-to-monitor\/?$/,
+    method: 'post',
+    withAuthentication: false,
+    mountRoute: (api: Api) => {
+
+        api.app.post('/variable-to-monitor', async (req: FRequest, res: express.Response) => {
+
+            try {
+                let response : RequestResponse = await checkParameters(['monitoredVariable'],req.body)
+                await digitalTwinMainController.createVariableToMonitor(req.body.monitoredVariable,response)
+                res.json(response.get())
+            }
+    
+            catch(error) {
+                console.error(error)
+                res.status(400)
+                res.json(error)
+            }
+        })
+
+    }
+})
+
+digitalTwinModule.addRoute({
+    
+    path: /^\/digital-twin\/?$/,
+    method: 'post',
+    withAuthentication: false,
+    mountRoute: (api: Api) => {
+
+        api.app.post('/digital-twin', async (req: FRequest, res: express.Response) => {
+
+            try {
+                let response : RequestResponse = await checkParameters(['monitoredVariable'],req.body)
+                await digitalTwinMainController.createDigitalTwin(req.body.digitalTwinName,response)
                 res.json(response.get())
             }
     

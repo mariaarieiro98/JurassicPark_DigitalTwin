@@ -1,5 +1,5 @@
 import { ACTION_TYPES, Action } from "./actions"
-import { FunctionBlock, FBCategory , Functionality, DigitalTwin, SmartComponent, MonitoredVariable, MonitoredEvent } from "../model"
+import { FunctionBlock, FBCategory , Functionality, DigitalTwin, SmartComponent, MonitoredVariable, MonitoredEvent, MonitoredVariableInstance, VariableToMonitor } from "../model"
 import { Reducer } from "react"
 import { AssociatedSmartComponent } from "../model/model/AssociatedSmartComponent"
 
@@ -54,7 +54,6 @@ export const functionBlockCategoryReducer : Reducer<FBCategory[], Action> = (sta
 
 }
 
-
 export const functionalityReducer : Reducer<Functionality[], Action> = (state: Functionality[], action: Action) : Functionality[] => {
 
     switch(action.type) {
@@ -71,7 +70,6 @@ export const functionalityReducer : Reducer<Functionality[], Action> = (state: F
     }
 
 }
-
 
 export const digitalTwinReducer : Reducer<DigitalTwin[], Action> = (state: DigitalTwin[], action: Action) : DigitalTwin[] => {
 
@@ -95,6 +93,9 @@ export const smartComponentReducer : Reducer<SmartComponent[], Action> = (state:
     switch(action.type) {
 
         case ACTION_TYPES.SMART_COMPONENT.UPDATE_SMART_COMPONENTS:
+            return action.payload
+
+        case ACTION_TYPES.SMART_COMPONENT.UPDATE_MONITORED_VARIABLES:
             return action.payload
 
         case ACTION_TYPES.SMART_COMPONENT.ADD_SMART_COMPONENTS:
@@ -130,6 +131,9 @@ export const monitoredVariableReducer : Reducer<MonitoredVariable[], Action> = (
 
         case ACTION_TYPES.MONITORED_VARIABLE.UPDATE_MONITORED_VARIABLES:
             return action.payload
+            
+        case ACTION_TYPES.MONITORED_VARIABLE.DELETE_MONITORED_VARIABLES:
+            return state.filter((monVar: MonitoredVariable) => monVar.idMonitoredVariable !== action.payload.idMonitoredVariable)
 
         case ACTION_TYPES.MONITORED_VARIABLE.ADD_MONITORED_VARIABLES:
             return [...state, action.payload]
@@ -157,3 +161,38 @@ export const monitoredEventReducer : Reducer<MonitoredEvent[], Action> = (state:
     }
 
 }
+
+export const monitoredVariableInstanceReducer : Reducer<MonitoredVariableInstance[], Action> = (state: MonitoredVariableInstance[], action: Action) :  MonitoredVariableInstance[] => {
+
+    switch(action.type) {
+
+        case ACTION_TYPES.MONITORED_VARIABLE_INSTANCE.UPDATE_MONITORED_VARIABLE_INSTANCES:
+            return action.payload
+
+        case ACTION_TYPES.MONITORED_VARIABLE_INSTANCE.ADD_MONITORED_VARIABLE_INSTANCES:
+            return [...state, action.payload]
+
+        default:
+            throw new Error()
+
+    }
+
+}
+
+export const variableToMonitorReducer : Reducer<VariableToMonitor[], Action> = (state: VariableToMonitor[], action: Action) :  VariableToMonitor[] => {
+
+    switch(action.type) {
+
+        case ACTION_TYPES.VARIABLE_TO_MONITOR.UPDATE_VARIABLES_TO_MONITOR:
+            return action.payload
+
+        case ACTION_TYPES.VARIABLE_TO_MONITOR.ADD_VARIABLES_TO_MONITOR:
+            return [...state, action.payload]
+
+        default:
+            throw new Error()
+
+    }
+
+}
+

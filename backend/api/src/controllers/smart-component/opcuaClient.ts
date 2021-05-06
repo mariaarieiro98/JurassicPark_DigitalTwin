@@ -2,7 +2,7 @@ import {OPCUAClient,MessageSecurityMode,
     SecurityPolicy, 
     ClientSubscription, 
     ClientSession, 
-    ReadValueIdLike, MonitoringParametersOptions, ClientMonitoredItem, TimestampsToReturn, DataValue, OPCUAClientOptions, MonitoredItem, AttributeIds} from 'node-opcua'
+    ReadValueIdLike, MonitoringParametersOptions, ClientMonitoredItem, TimestampsToReturn, DataValue, OPCUAClientOptions, MonitoredItem, AttributeIds, constructBrowsePathFromQualifiedName} from 'node-opcua'
 
 export enum OPCUA_MONITORING_ITEM {
 
@@ -25,16 +25,12 @@ export enum OPCUA_HW_MONITORING {
     memUsed = 'MEM_USED',
 }
 
+
 export enum FUNCTION_BLOCK_FOLDERS {
     SENSORS = 'DeviceSet',
     INTERFACE = 'PointSet',
     SERVICES = 'ServiceInstanceSet'
 }
-
-export enum DEVICE_SET_FOLDERS {
-    VARIABLES = 'Variables'
-}
-
 
 export const HARDWARE_MONITORING_FOLDER = 'HardwareMonitoring'
 
@@ -48,6 +44,7 @@ export interface OpcuaClientObserver {
     observerId?: number
     itemsToObserve: ItemNotifier[]
     notifyFunctionBlockInstanceStateChanged : (functionBlockInstance: string, value: number) => void
+    notifyMonitoredVariablesCurrentValueChanged : (monitoredVariableInstance: string, value: number, variable:string) => void
 }
 
 export class OpcUaClient {
@@ -96,6 +93,7 @@ export class OpcUaClient {
     device : string = ''
 
     monitoredItems : any = {}
+    monitoredVariableInstances : any = {}
     monitoredFunctionBlockInstances : any = {}
 
     static NAME_SPACE = 'ns=2'
@@ -251,6 +249,23 @@ export class OpcUaClient {
         })
 
     }
+
+    private addMonitoredVariableCurrentValueMonitorItem(monitoredVarialeInstanceId: string, variable:string) {
+     
+        const itemToMonitor : ReadValueIdLike= {nodeId: `${OpcUaClient.NAME_SPACE};s=${monitoredVarialeInstanceId}:Variables:${variable}`}
+        this.monitoredVariableInstances[monitoredVarialeInstanceId] = ClientMonitoredItem.create(this.subscription,itemToMonitor,OpcUaClient.monitoringParametersOptions,TimestampsToReturn.Both)
+        
+        this.monitoredVariableInstances[monitoredVarialeInstanceId].on('changed', (dataValue:DataValue) => {
+
+            this.observers.forEach((observer: OpcuaClientObserver) => {
+
+                observer.notifyMonitoredVariablesCurrentValueChanged(monitoredVarialeInstanceId, dataValue.value.value, variable,)
+
+            })
+
+        })
+
+    }
     
     public addMonitorItemObserver(item:OPCUA_MONITORING_ITEM | OPCUA_HW_MONITORING) {
 
@@ -294,6 +309,62 @@ export class OpcUaClient {
 
     }
 
+    public getAllMonitoredVariableInstances(variable: any[]) : Promise<{id:string, monitoredVariableName: string, currentValue: number}[]> {
+       
+        return new Promise(async(res:Function, rej:Function) => {
+
+            try {
+                const variables = await this.getMonitoredVariableInstances(FUNCTION_BLOCK_FOLDERS.SENSORS, variable)
+                res([...variables])
+
+            }
+
+            catch(err) {
+                console.error(err)
+                rej(err)
+            }
+  
+        })
+
+    }
+
+    //Lê a informação relativa à variável VALUE
+    private getMonitoredVariableInstances(folder: string, variables: any[]) : Promise<{id:string, monitoredVariableName: string, currentValue: number, sc: string}[]> {
+       
+        return new Promise(async(res:Function, rej:Function) => {
+    
+            try {
+
+                const deviceSetNodeId = `${OpcUaClient.NAME_SPACE};s=${this.device}:${folder}`
+                const browseResult = await this.opcuaSession.browse(deviceSetNodeId);
+                    
+                const result : {id:string, monitoredVariableName: string, currentValue: number, sc: string}[] = []
+            
+                variables.reverse()
+                for(const reference of browseResult.references) {
+
+                    for(const variable of variables){
+                        const id = reference.browseName.name
+                        const currentValue = (await this.opcuaSession.read({nodeId:`${OpcUaClient.NAME_SPACE};s=${reference.browseName.name}:Variables:${variable}`})).value.value
+                        const monitoredVariableName =  (await this.opcuaSession.read({nodeId:`${OpcUaClient.NAME_SPACE};s=${reference.browseName.name}:Variables:${variable}`, attributeId: AttributeIds.DisplayName})).value.value.text             
+                        const sc = this.device
+                        this.addMonitoredVariableCurrentValueMonitorItem(reference.browseName.name,variable)
+                        result.push({id,currentValue,monitoredVariableName, sc})
+                    }
+                }
+    
+                res(result)
+    
+            }
+    
+            catch(err) {
+                rej(err)
+            }
+    
+        })
+
+    }
+
     private getFunctionBlockInstances(folder: string) : Promise<{id:string, state: number, fbType: string}[]> {
 
         return new Promise(async(res:Function, rej:Function) => {
@@ -306,7 +377,6 @@ export class OpcUaClient {
                 const result : {id:string, state: number,fbType:string}[] = []
         
                 for(const reference of browseResult.references) {
-
                     const id = reference.displayName.text
                     const state = (await this.opcuaSession.read({nodeId:`${OpcUaClient.NAME_SPACE};s=${reference.browseName.name}:FBState`})).value.value
                     const fbType = (await this.opcuaSession.read({ nodeId:`${OpcUaClient.NAME_SPACE};s=${reference.browseName.name}.dID`})).value.value
@@ -326,54 +396,4 @@ export class OpcUaClient {
 
     }
 
-    public getAllMonitoredVariableInstances() : Promise<{id:string, monitoredVariableName: string, currentValue: number}[]> {
-
-        return new Promise(async(res:Function, rej:Function) => {
-
-            try {
-
-                const variables = await this.getMonitoredVariableInstances(FUNCTION_BLOCK_FOLDERS.SENSORS)
-                res([...variables])
-
-            }
-
-            catch(err) {
-                console.error(err)
-                rej(err)
-            }
-  
-        })
-
-    }
-
-    //Lê a informação relativa à variável VALUE
-    private getMonitoredVariableInstances(folder: string) : Promise<{id:string, monitoredVariableName: string, currentValue: number}[]> {
-
-        return new Promise(async(res:Function, rej:Function) => {
-
-            try {
-                const deviceSetNodeId = `${OpcUaClient.NAME_SPACE};s=${this.device}:${folder}`
-                const browseResult = await this.opcuaSession.browse(deviceSetNodeId);
-                
-                const result : {id:string, monitoredVariableName: string, currentValue: number}[] = []
-        
-                for(const reference of browseResult.references) {
-                    const id = reference.displayName.text
-                    const currentValue = (await this.opcuaSession.read({nodeId:`${OpcUaClient.NAME_SPACE};s=${reference.browseName.name}:Variables:VALUE`})).value.value
-                    const monitoredVariableName =  (await this.opcuaSession.read({nodeId:`${OpcUaClient.NAME_SPACE};s=${reference.browseName.name}:Variables:VALUE`, attributeId: AttributeIds.DisplayName})).value.value.text             
-                    //this.addFunctionBlockStateMonitorItem(reference.browseName.name)
-                    result.push({id,currentValue,monitoredVariableName})
-                }
-
-                res(result)
-
-            }
-
-            catch(err) {
-                rej(err)
-            }
-
-        })
-
-    }
 }

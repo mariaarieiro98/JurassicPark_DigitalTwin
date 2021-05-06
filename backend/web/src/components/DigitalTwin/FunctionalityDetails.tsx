@@ -1,9 +1,9 @@
-import { Box, Button, Card, CardContent, CardHeader, Divider, Grid } from '@material-ui/core'
+import { Card, CardContent, CardHeader, Divider, Grid } from '@material-ui/core'
 import React, { useState } from 'react'
 import { match, Redirect, useRouteMatch } from 'react-router-dom'
 import { routes } from '../../App'
-import { FbInstance, Functionality, MonitoredEvent, MonitoredVariable, MonitoredVariableInstance, SmartComponent } from '../../model'
-import { FunctionalityActions, MonitoredEventActions, MonitoredVariableActions, SmartComponentActions } from '../../redux/actions'
+import { Functionality, MonitoredEvent, MonitoredVariable, MonitoredVariableInstance, SmartComponent } from '../../model'
+import { FunctionalityActions, MonitoredEventActions, MonitoredVariableActions } from '../../redux/actions'
 import { RequestResponseState } from '../../services/api/api'
 import { getOrDownloadFunctionalities, getOrDownloadMonitoredEvents, getOrDownloadMonitoredVariables } from '../../utils/digitalTwins'
 import { useMountEffect } from '../../utils/main'
@@ -12,22 +12,19 @@ import { useStore } from '../templates/Store/Store'
 import { JPTable } from '../templates/Table/JPTable'
 import { FunctionalityForm } from './FunctionalityForm'
 import { SocketConnection, SOCKET_EVENT } from '../../services/socket/socket'
-import { Visibility } from '@material-ui/icons'
 import { useSmartComponentStyles } from '../SmartComponents/style'
+import { deleteMonitoredVariable } from '../../services/api/digital-twin'
 
 //Esta página pretende dispor informação mais detalhada da funcionalidade correspondente disponível na página "DigitalTwinMonitoring"
 
-interface SmartComponentWithDataState extends SmartComponent {
-    state: {
-        key:string | undefined
-        data: React.ReactElement
-    },
-    detail: {
-        key: 'detail'
-        data: React.ReactElement
+let selectedMonitoredVariableGlobal : MonitoredVariable[] = []
+
+interface MonitoredVariableWithCurrentValue extends MonitoredVariableInstance {
+    currentValueData: {
+        key: string | undefined
+        data: number
     }
 }
-
 
 export const FunctionalityDetails = () => {
 
@@ -47,6 +44,8 @@ export const FunctionalityDetails = () => {
         
         let monitoredVariable : MonitoredVariable[] = monVars.filter((monVar) => monVar.funcIdAssociated === parseInt(id))
         
+        selectedMonitoredVariableGlobal = monitoredVariable;
+
         setSelectedMonitoredVariable(monitoredVariable)
 
     }
@@ -95,33 +94,25 @@ export const FunctionalityDetails = () => {
     
     })
     
-    //Cabeçalhos da tabela Variable + Funções Necessárias
+    // Cabeçalhos da tabela Variable + Funções Necessárias
     const indexes_variable = [
         {label: 'Variable', key: 'monitoredVariableName'},
-        {label: 'Function Block', key: 'fbAssociated'},
-        {label: 'Smart Component', key: 'scAssociated'},
-        {label: 'Current Value', key: 'state'},
-        {label: 'Graph', key: 'dtName'},
-        {label: 'Remove', key: 'dtName'},
+        {label: 'Function Block', key: 'id'},
+        {label: 'Smart Component', key: 'sc'},
+        {label: 'Current Value', key: 'currentValueData'},
+        //{label: 'Graph', key: 'dtName'},
+        //{label: 'Remove', key: 'dtName'},
     ]
 
-    const getDataMonitoredVariable = () =>  selectedMonitoredVariable.map((monitoredVariable: MonitoredVariable) => {    
-        
-        return {
-            ...monitoredVariable
-        }
-
-    })
-
-    //Cabeçalhos da tabela Event + Funções Necessárias
+    // Cabeçalhos da tabela Event + Funções Necessárias
     const indexes_event = [
         {label: 'Event', key: 'monitoredEventName'},
         {label: 'Function Block', key: 'fbAssociated'},
         {label: 'Smart Component', key: 'scAssociated'},
         {label: 'Trigger', key: 'dtName'},
-        {label: 'Current Value', key: 'sc.scState'},
+        //{label: 'Current Value', key: 'sc.scState'},
         //{label: 'Graph', key: 'dtName'},
-        {label: 'Remove', key: 'dtName'},
+        //{label: 'Remove', key: 'dtName'},
     ]
 
     const getDataMonitoredEvent = () =>  selectedMonitoredEvent.map((monitoredEvent: MonitoredEvent) => {    
@@ -132,7 +123,28 @@ export const FunctionalityDetails = () => {
 
     })
 
-    //Variáveis e funções que permitem o redireccionamento para a página DigitalTwinMonitoring
+    const deleteMonitoredVariableAction = (monVar: MonitoredVariable) : Promise<any> => {
+
+        return new Promise(async(res:Function,rej:Function) => {
+    
+            if(!monVar.idMonitoredVariable) {
+                rej('Error')
+                return
+            }
+            
+            try {
+                console.log("id:",monVar.idMonitoredVariable)
+                const response : RequestResponseState = await deleteMonitoredVariable(monVar.idMonitoredVariable)
+                res(response)
+              }
+    
+            catch(err) {
+                rej(err)
+            }
+        })
+    }
+
+    // Variáveis e funções que permitem o redireccionamento para a página DigitalTwinMonitoring
     const [redirectTo, setRedirectTo] : [string, Function] = useState("")
 
     const redirectToList = () => setRedirectTo(routes.digitalTwinMonitoring)
@@ -153,7 +165,7 @@ export const FunctionalityDetails = () => {
     }, 0)
     })
 
-    //Recuperar dados da funcionalidade
+    // Recuperar dados da funcionalidade
     let [functionalityName, setFunctionalityName] : [Functionality[], Function] = useState([])
 
     let i = 0;
@@ -165,93 +177,97 @@ export const FunctionalityDetails = () => {
         i++
     }
 
-    //Estabelecer a ligação com os sockets
+    // Estabelecer a ligação com os sockets
     const socket : SocketConnection = new SocketConnection(SocketConnection.getSmartComponentsNamespace())
     
-    const [smartComponents,setSmartComponents] : [SmartComponentWithDataState[],Function] = useState([])
+    const [monitoredVariableInstances,setMonitoredVariableInstances] : [MonitoredVariableWithCurrentValue[],Function] = useState([])
 
     const classes = useSmartComponentStyles()
 
-    const updateSmartObjects = (scs:SmartComponent[]) => setSmartComponents(getComponentsWithStateData(scs))
+    const updateMonitoredVariableInstances = (monVars:MonitoredVariableInstance[]) => setMonitoredVariableInstances(getMonitoredVariablesWithCurrentValue(monVars))
 
-    const updateSmartComponent = (sc: SmartComponent) => {
+    const updateMonitoredVariableInstance = (monVars: MonitoredVariableInstance[]) => {
 
-        setSmartComponents((prevComponents: SmartComponentWithDataState[]) => {
+        for(const monVar of monVars) {
 
-            let newSc = true
+            if(selectedMonitoredVariableGlobal.length === 0){
+                return []
+            }
+            
+            else{
 
-            const newComponents = getComponentsWithStateData(prevComponents.map((oSc:SmartComponentWithDataState) => {
+               for(const selectedMonVar of selectedMonitoredVariableGlobal){
 
-                if(oSc.scId === sc.scId) {
-                    newSc = false
-                    return sc
+                    if((selectedMonVar.monitoredVariableName === monVar.monitoredVariableName) && (selectedMonVar.scAssociated === monVar.sc)){
+                        
+                        setMonitoredVariableInstances((prevMonitoredVariables: MonitoredVariableWithCurrentValue[]) => {
+
+                            let newMonVar = true
+                
+                            const newMonitoredVariables = getMonitoredVariablesWithCurrentValue(prevMonitoredVariables.map((oMonVar:MonitoredVariableWithCurrentValue) => {
+                
+                                if((oMonVar.monitoredVariableName === monVar.monitoredVariableName) && (oMonVar.sc === monVar.sc) &&  (oMonVar.id === monVar.id)) {
+                                    newMonVar = false
+                                    return monVar
+                                }
+                                return oMonVar
+                
+                            }))
+                        
+                            if(newMonVar)
+                                return [...prevMonitoredVariables, addCurrentValueData(monVar)]
+                            return newMonitoredVariables
+                
+                        })
+                    }
                 }
-                return oSc
-
-            }))
-
-            if(newSc)
-                return [...prevComponents, addStateAndDetialData(sc)]
-            return newComponents
-
-        })
+            }
+            
+        }
+     
     }
 
-    const getComponentsWithStateData = (scs: SmartComponent[]) : SmartComponentWithDataState[] => {
+    const getMonitoredVariablesWithCurrentValue = (monVars: MonitoredVariableInstance[]) : MonitoredVariableWithCurrentValue[] => {
 
-        return scs.map((sc:SmartComponent) => addStateAndDetialData(sc))
+        return monVars.map((monVar:MonitoredVariableInstance) => addCurrentValueData(monVar))
 
     }
 
-    const addStateAndDetialData = (sc: SmartComponent) : SmartComponentWithDataState => {
+    const addCurrentValueData = (monVar: MonitoredVariableInstance) : MonitoredVariableWithCurrentValue => {
 
         return (
             {
-                ...sc, 
-                state:  {
-                    key: sc.scState,
-                    data: <Box className= {`${classes.onLineState} ${sc.scState === 'connected' ? classes.onLineStateOn : classes.onLineStateOff}`}/>
-                },
-                detail: {
-                    key: 'detail',
-                    data: <Button variant="text" size="small"><Visibility fontSize="small"/></Button> 
+                ...monVar, 
+                currentValueData:  {
+                    key: monVar.monitoredVariableName,
+                    data: monVar.currentValue
                 }
             }
         )
     }
 
-    const onInitialData = (data:any) => {
-        updateSmartObjects(data.result)
-        setFetching(false)
-    } 
-
-
     const onDisconnect = () => {
         setError("Server error")
         setFetching(false)
-        setSmartComponents([])
     }
 
-    let variable = 'VALUE'
     useMountEffect(() => {
-
         setTimeout(() => {
 
-            socket.connect(() => {}, onDisconnect, onInitialData)
-            socket.addListener(SOCKET_EVENT.UPDATED_SC_EVENT, updateSmartComponent)
-            socket.emit(SOCKET_EVENT.EDITED_MVI_EVENT, variable)
-
+            socket.connect(() => {}, onDisconnect)
+            socket.addListener(SOCKET_EVENT.EDITED_MVI_EVENT, (data) => updateMonitoredVariableInstance(data))
         }, 0)
 
     }, () => socket?.disconnect())
 
-
+   
     if(redirectTo !== "") 
     return <Redirect to={redirectTo} push={true} />
 
     return(
     <Navigator title="Digital Twin monitoring">
     <>
+    {/* <meta http-equiv="refresh" content="20" /> */}
         <Grid item>
             <Card>
                 <CardHeader title={functionalityName} />
@@ -261,10 +277,17 @@ export const FunctionalityDetails = () => {
                             <Grid item>
                                 <JPTable
                                     sortedkey="idMonitoredVariable"
-                                    data={getDataMonitoredVariable()} 
-                                    updateData={updateMonitoredVariables} 
+                                    data={monitoredVariableInstances} 
+                                    updateData={updateMonitoredVariableInstances} 
                                     indexes={indexes_variable} 
                                     tName='MonitoredVariable'
+                                    extra={{
+                                        delete: {
+                                            action: deleteMonitoredVariableAction,
+                                            labelKey: 'monitoredVariableName',
+                                            onSuccessDelete: () => {}
+                                        }
+                                    }} 
                                 />
                             </Grid>
                         </Grid>

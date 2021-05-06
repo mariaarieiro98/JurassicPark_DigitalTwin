@@ -218,18 +218,6 @@ digitalTwinModule.addRoute({
     method: 'post',
     withAuthentication: false,
     mountRoute: (api) => {
-        // api.app.post('/associated-smart-components', async (req: FRequest, res: express.Response) => {
-        //     try {
-        //         let response : RequestResponse = await checkParameters(['assSc','scDtId'],req.body)
-        //         await digitalTwinMainController.createAssociatedSmartComponent(req.body.assSc,req.body.scDtId,response)
-        //         res.json(response.get())
-        //     }
-        //     catch(error) {
-        //         console.error(error)
-        //         res.status(400)
-        //         res.json(error)
-        //     }
-        // })
         api.app.post('/associated-smart-components/', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             try {
                 let response = yield request_1.checkParameters(['scName', 'associatedScUserId', 'scDtId'], req.body);
@@ -310,6 +298,26 @@ digitalTwinModule.addRoute({
     }
 });
 digitalTwinModule.addRoute({
+    path: /^\/monitored-variable\/-?[0-9]+\/?$/,
+    method: 'delete',
+    withAuthentication: false,
+    mountRoute: (api) => {
+        api.app.delete('/monitored-variable/:id', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+            try {
+                console.log(req.params.id);
+                let response = yield request_1.checkParameters(['id'], req.params);
+                yield digitalTwinMainController_1.digitalTwinMainController.removeMonitoredVariable(parseInt(req.params.id), response);
+                res.json(response.get());
+            }
+            catch (error) {
+                console.error(error);
+                res.status(400);
+                res.json(error);
+            }
+        }));
+    }
+});
+digitalTwinModule.addRoute({
     path: /^\/monitored-event\/?$/,
     method: 'get',
     withAuthentication: false,
@@ -338,6 +346,44 @@ digitalTwinModule.addRoute({
                 let response = yield request_1.checkParameters(['funcIdAssociated', 'fbAssociated', 'idMonitoredEvent', 'monitoredEventName'], req.body);
                 const monitoredEvent = req.body;
                 yield digitalTwinMainController_1.digitalTwinMainController.createMonitoredEvent(monitoredEvent, response);
+                res.json(response.get());
+            }
+            catch (error) {
+                console.error(error);
+                res.status(400);
+                res.json(error);
+            }
+        }));
+    }
+});
+digitalTwinModule.addRoute({
+    path: /^\/variable-to-monitor\/?$/,
+    method: 'post',
+    withAuthentication: false,
+    mountRoute: (api) => {
+        api.app.post('/variable-to-monitor', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+            try {
+                let response = yield request_1.checkParameters(['monitoredVariable'], req.body);
+                yield digitalTwinMainController_1.digitalTwinMainController.createVariableToMonitor(req.body.monitoredVariable, response);
+                res.json(response.get());
+            }
+            catch (error) {
+                console.error(error);
+                res.status(400);
+                res.json(error);
+            }
+        }));
+    }
+});
+digitalTwinModule.addRoute({
+    path: /^\/digital-twin\/?$/,
+    method: 'post',
+    withAuthentication: false,
+    mountRoute: (api) => {
+        api.app.post('/digital-twin', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+            try {
+                let response = yield request_1.checkParameters(['monitoredVariable'], req.body);
+                yield digitalTwinMainController_1.digitalTwinMainController.createDigitalTwin(req.body.digitalTwinName, response);
                 res.json(response.get());
             }
             catch (error) {

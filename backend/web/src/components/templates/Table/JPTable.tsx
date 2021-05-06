@@ -53,8 +53,6 @@ export const JPTable = (props: {
       tName: string
       extra?: {
         delete? :{
-          label?:string,
-          key?:string,
           action: (element:any) => Promise<any>
           labelKey: string,
           onSuccessDelete: (element: any) => void

@@ -1,6 +1,6 @@
 import { DatabaseUtils, Statement, Operation } from "../../utils/database"
 import { RequestResponse } from "../../utils/request"
-import { GeneralErrors , MonitoredEvent, Tables} from "../../model"
+import { GeneralErrors , MonitoredEvent, Tables, VariableToMonitor} from "../../model"
 import { groupBy } from "../../utils/utils"
 import { Functionality ,DigitalTwin} from "../../model"
 import { AssociatedSmartComponent } from "../../model/model/AssociatedSmartComponent"
@@ -428,6 +428,37 @@ export class DigitalTwinMainController {
         })
     }
 
+    public removeMonitoredVariable = (id: number, response: RequestResponse) : Promise<RequestResponse> => {    
+      
+        return new Promise(async (res: Function, rej: Function) => {
+
+            try {
+                console.log("id:", id)
+
+                const oldMonitoredVariable = (await DatabaseUtils.executeStatement('SELECT monitoredVariableName FROM MonitoredVariable WHERE idMonitoredVariable = ?', [id])).result[0]
+    
+                if(!oldMonitoredVariable ) {
+                    response.setErrorState('No monitored-variable found')
+                    rej(response)
+                    return
+                }
+
+                const deleteMonitoredVariableStmt : string = 'DELETE FROM MonitoredVariable WHERE idMonitoredVariable = ?'
+                await DatabaseUtils.executeStatement(deleteMonitoredVariableStmt, [id])
+                res(response)
+
+            }
+
+            catch(error) {
+                console.error(error)
+                response.setErrorState('Error Deleting Monitored Variable',GeneralErrors.general.code)
+                rej(response)
+            }
+
+        })
+
+    }
+
     public createMonitoredVariable = (monitoredVariable: MonitoredVariable, response: RequestResponse) : Promise<RequestResponse> => {
 
         return new Promise(async (res: Function, rej: Function) => {
@@ -514,6 +545,29 @@ export class DigitalTwinMainController {
 
         })
 
+
+    }
+
+    public createVariableToMonitor = (monitoredVariable: string, response: RequestResponse) : Promise<RequestResponse> => {
+
+        return new Promise(async (res: Function, rej: Function) => {
+
+            try {
+
+                const insertVariableToMonitor : string = 'Insert INTO VariableToMonitor(variableName) VALUES(?)'
+                const result = await DatabaseUtils.executeStatement(insertVariableToMonitor, [monitoredVariable])
+                response.setExtra({lastInsertedId:result.result.insertId})
+                res(response)
+
+            }
+
+            catch(error) {
+                console.error(error)
+                response.setErrorState('Error Creating VariableToMonitor',GeneralErrors.general.code)
+                rej(response)
+            }
+
+        })
 
     }
 

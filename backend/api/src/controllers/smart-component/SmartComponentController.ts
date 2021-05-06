@@ -1,17 +1,18 @@
-import {SmartComponent as SmartComponentData, FunctionBlock, FbInstance , MonitoredVariableInstance} from '../../model'
+import {SmartComponent as SmartComponentData, FunctionBlock, FbInstance, MonitoredVariableInstance, MonitoredVariable} from '../../model'
 import { OpcUaClient, OPCUA_MONITORING_ITEM, OPCUA_HW_MONITORING, OpcuaClientObserver, ItemNotifier } from './opcuaClient'
-import { socketEngine } from '../../index'
+import {socketEngine} from '../../index'
 import { SocketEngineInterface } from '../../SocketEngine'
 import { functionBlockMainController } from '../function-block/functionBlockMainController'
 import { RequestResponse } from '../../utils/request'
 import { digitalTwinMainController } from '../digital-twin/digitalTwinMainController'
+import { Console } from 'node:console'
 
 export class SmartComponentController implements SocketEngineInterface,OpcuaClientObserver {
 
-    static EDITED_SC_EVENT = "smart-component-updated"
-    static EDITED_FBI_EVENT = "smart-component-fbi-updated"
+    static EDITED_SC_EVENT = 'smart-component-updated'
+    static EDITED_FBI_EVENT = 'smart-component-fbi-updated'
     static BASE_NAME_SPACE = 'smart-component'
-    static EDITED_MVI_EVENT = "smart-component-mvi-updated"
+    static EDITED_MVI_EVENT = 'smart-component-mvi-updated'
 
     data : SmartComponentData
     opcuaController : OpcUaClient
@@ -23,18 +24,10 @@ export class SmartComponentController implements SocketEngineInterface,OpcuaClie
         } 
     }
 
-    variable = {
-        data: () => {
-            return this.data
-        },
-        sendVariableToServer: (variable:string) => void {}
-    }
-
     private constructor(address: string, port: number, id: number, name?:string, type?:string) {
         this.opcuaController = new OpcUaClient(address,port)
         this.opcuaController.registerObserver(this)
         this.namespace = `${SmartComponentController.BASE_NAME_SPACE}/${id}`
-        //this.variable = SmartComponentController.EDITED_MVI_EVENT
         this.data = {
             scAddress:address,
             scPort: port,
@@ -48,7 +41,7 @@ export class SmartComponentController implements SocketEngineInterface,OpcuaClie
 
         return new Promise((res:Function, rej:Function) => {
 
-            const smartComponentController : SmartComponentController = new SmartComponentController(address,port,id,name,type)      
+            const smartComponentController : SmartComponentController = new SmartComponentController(address,port,id,name,type)            
             smartComponentController.opcuaController.connect(smartComponentController.setConnected, smartComponentController.setDisconnected)
 
                 .then(async (result: string) => {
@@ -188,6 +181,8 @@ export class SmartComponentController implements SocketEngineInterface,OpcuaClie
                     fbType: element.fbType
                 }
             })
+
+            //console.log("this.data.fbInstances", this.data.fbInstances)
             
             this.notifyClientFBIUpdated()
         }
@@ -198,7 +193,7 @@ export class SmartComponentController implements SocketEngineInterface,OpcuaClie
     }
 
     notifyFunctionBlockInstanceStateChanged(functionBlockInstanceId: string, value: number) {
-
+      
         this.data.fbInstances = this.data.fbInstances.map((instance: FbInstance) => {
 
             if(instance.id === functionBlockInstanceId)
@@ -211,33 +206,53 @@ export class SmartComponentController implements SocketEngineInterface,OpcuaClie
 
     }
 
+    notifyMonitoredVariablesCurrentValueChanged(monitoredVariableInstanceId: string, value: number, variable:string) {
+
+        this.data.monitoredVariableInstances = this.data.monitoredVariableInstances.map((instance: MonitoredVariableInstance) => {
+
+            if((instance.id === monitoredVariableInstanceId) && (instance.monitoredVariableName === variable))
+                instance.currentValue = value
+            return instance
+
+        })
+
+        this.notifyClientMonitoredVariableValueUpdated()
+    }
+
     //Lê a informação relativa à variável VALUE
     private async readMonitoredVariablesAndNotifyClient() {
 
         try {
 
-            console.log("this.variable.sendVariableToServer: ", this.initializer.data)
+            const monitoredVariables : {monitoredVariableName:string,scAssociated:string}[] = (await digitalTwinMainController.getMonitoredVariable(new RequestResponse())).getResult().map((monVar:MonitoredVariable) => ({monitoredVariableName: monVar.monitoredVariableName, scAssociated:monVar.scAssociated}))
             
-            const monitoredVariableValues = await this.opcuaController.getAllMonitoredVariableInstances()
+            let i=0
+            const monitoredVariablesName = []
+            while(i<monitoredVariables.length){
+                monitoredVariablesName[i] = monitoredVariables[i].monitoredVariableName
+                i++
+            }
 
+            const monitoredVariableValues = await this.opcuaController.getAllMonitoredVariableInstances(monitoredVariablesName)
             const promisesMVI = []
-    
+           
             monitoredVariableValues.forEach((element:{id:string, monitoredVariableName: string, currentValue: number}) => {
                 promisesMVI.push(digitalTwinMainController.getMonitoredVariable(new RequestResponse(),[{key: 'monitoredVariableName', value: element.monitoredVariableName}]))
             })
     
             const mvis = await Promise.all(promisesMVI)
 
-            this.data.monitoredVariableInstances = monitoredVariableValues.map((element:{id:string, monitoredVariableName: string, currentValue: number}, index:number) => {
+            this.data.monitoredVariableInstances = monitoredVariableValues.map((element:{id:string, monitoredVariableName: string, currentValue: number, sc: string}, index:number) => {
                 
                 const monVar : MonitoredVariableInstance = mvis[index].result[0] ?? undefined
                 
                 return {
                     id:element.id, 
                     currentValue: element.currentValue,
-                    monitoredVariableName: element.monitoredVariableName
+                    monitoredVariableName: element.monitoredVariableName,
+                    sc: element.sc
                 }
-            })
+            })  
             
             this.notifyClientMonitoredVariableValueUpdated()
         }
@@ -246,5 +261,4 @@ export class SmartComponentController implements SocketEngineInterface,OpcuaClie
             console.error(err)
         }
     }
-
 }

@@ -32,7 +32,6 @@ class SmartComponentMainController implements SocketEngineInterface {
     }
 
     public getSmartObjectSData(response: RequestResponse, filters?: {key:string, value: number | string | boolean}[]) : RequestResponse {
-
         const result = this.getSmartObjects(response,filters).getResult().map((sc: SmartComponentController) => sc.data)
         response.setResult(result)
         return response

@@ -12,6 +12,7 @@ export interface MonitoredVariableInstance {
     id: string
     monitoredVariableName: string
     currentValue: number
+    sc: string
 }
 
 export interface MonitoredEventInstance {
