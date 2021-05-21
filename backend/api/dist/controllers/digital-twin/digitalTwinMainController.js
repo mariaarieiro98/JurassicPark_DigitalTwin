@@ -32,7 +32,7 @@ class DigitalTwinMainController {
         this.processRawMonitoredEvents = (raw) => {
             const grouped = utils_1.groupBy(raw, 'idMonitoredEvent', ['fbAssociated', 'monitoredEventName', 'funcIdAssociated', 'scAssociated', 'funcName']);
             return grouped.map((monoEv) => ({
-                idMonitoredVariable: parseInt(monoEv.idMonitoredEvent), monitoredEventName: monoEv.monitoredEventName, funcIdAssociated: monoEv.funcIdAssociated, funcName: monoEv.funcName,
+                idMonitoredEvent: parseInt(monoEv.idMonitoredEvent), monitoredEventName: monoEv.monitoredEventName, funcIdAssociated: monoEv.funcIdAssociated, funcName: monoEv.funcName,
                 fbAssociated: monoEv.fbAssociated, scAssociated: monoEv.scAssociated
             }));
         };
@@ -374,17 +374,22 @@ class DigitalTwinMainController {
                 }
             }));
         };
-        this.createVariableToMonitor = (monitoredVariable, response) => {
+        this.removeMonitoredEvent = (id, response) => {
             return new Promise((res, rej) => __awaiter(this, void 0, void 0, function* () {
                 try {
-                    const insertVariableToMonitor = 'Insert INTO VariableToMonitor(variableName) VALUES(?)';
-                    const result = yield database_1.DatabaseUtils.executeStatement(insertVariableToMonitor, [monitoredVariable]);
-                    response.setExtra({ lastInsertedId: result.result.insertId });
+                    const oldMonitoredEvent = (yield database_1.DatabaseUtils.executeStatement('SELECT monitoredEventName FROM MonitoredEvent WHERE idMonitoredEvent = ?', [id])).result[0];
+                    if (!oldMonitoredEvent) {
+                        response.setErrorState('No monitored-event found');
+                        rej(response);
+                        return;
+                    }
+                    const deleteMonitoredEventStmt = 'DELETE FROM MonitoredEvent WHERE idMonitoredEvent= ?';
+                    yield database_1.DatabaseUtils.executeStatement(deleteMonitoredEventStmt, [id]);
                     res(response);
                 }
                 catch (error) {
                     console.error(error);
-                    response.setErrorState('Error Creating VariableToMonitor', model_1.GeneralErrors.general.code);
+                    response.setErrorState('Error Deleting Monitored Event', model_1.GeneralErrors.general.code);
                     rej(response);
                 }
             }));

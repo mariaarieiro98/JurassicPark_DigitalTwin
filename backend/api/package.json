@@ -47,5 +47,8 @@
     "typescript": "^4.2.3",
     "url-parse": "^1.5.1",
     "xml-js": "^1.6.11"
+  },
+  "nodemonConfig": {
+    "ignore": ["./4diac-lib/events_sub_serv.json"]
   }
 }

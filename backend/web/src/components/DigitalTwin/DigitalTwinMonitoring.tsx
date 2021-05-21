@@ -11,12 +11,13 @@ import { useStore } from '../templates/Store/Store'
 import { FunctionalityActions , DigitalTwinActions, AssociatedSmartComponentActions, MonitoredVariableActions, MonitoredEventActions} from '../../redux/actions'
 import { RequestResponseState } from '../../services/api/api'
 import { TextField, Grid, Button, Box, Dialog, DialogTitle, CircularProgress , Select, InputLabel, MenuItem } from '@material-ui/core'
-import { createFunctionality, createMonitoredEvent, createMonitoredVariable, createVariableToMonitor, updateFunctionality } from '../../services/api/digital-twin'
+import { createFunctionality, createMonitoredEvent, createMonitoredVariable, deleteMonitoredEvent, deleteMonitoredVariable, updateFunctionality } from '../../services/api/digital-twin'
 import { deleteFunctionality} from '../../services/api/digital-twin'
 import { useDialogStyles } from '../FunctionBlockCategories/List/style'
 import { CheckCircle, Error } from '@material-ui/icons'
 import { useFunctionBlockStyles } from '../FunctionBlocks/FunctionBlock/style'
 import { Redirect } from 'react-router-dom'
+import { Socket } from 'socket.io-client'
 
 const NEW_FUNCTIONALITY_RE = /[a-zA-Z0-9]{3,}/
 const FUNCTION_BLOCK_RE = /[a-zA-Z0-9]{3,}/
@@ -213,23 +214,22 @@ const AddFunctionalityDetails = (props: {func: Functionality, onGood: (newFunc: 
         const monitoredVariable: MonitoredVariable = buildMonitoredVariable(funcId)
         const monitoredEvent: MonitoredEvent = buildMonitoredEvent(funcId)
 
+        console.log(monitoredVariable)
         if(props.func.funcId) {
-  
+            
             if(!result.done) {
-  
+                
                 setSending(true)
+
                 updateFunctionality(props.func)
   
                     .then((response: RequestResponseState) => {
                         setResult({done:true, good: true, message: response.msg})
                     })
-  
                     .catch((error: RequestResponseState) => {
                         setResult({done: true, good: false, message: error.msg})
                     })
   
-                    .finally(() => setSending(false))
-                
                 if(newVariable!=''){
 
                     createMonitoredVariable(monitoredVariable)
@@ -239,53 +239,43 @@ const AddFunctionalityDetails = (props: {func: Functionality, onGood: (newFunc: 
                         .catch((error: RequestResponseState) => {
                             setResult({done: true, good: false, message: error.msg})
                         })
-                        .finally(() => setSending(false))
+                }
+                
 
-                    createVariableToMonitor(newVariable)
+                if(newEvent!=''){
+
+                    createMonitoredEvent(monitoredEvent)
                         .then((response: RequestResponseState) => {
                             setResult({done:true, good: true, message: response.msg})
                         })
                         .catch((error: RequestResponseState) => {
                             setResult({done: true, good: false, message: error.msg})
                         })
-                        .finally(() => setSending(false))
                 }
-                
 
-                if(newEvent!=''){
-                     
-                    createMonitoredEvent(monitoredEvent)
 
-    
-                    .then((response: RequestResponseState) => {
-                        setResult({done:true, good: true, message: response.msg})
-                    })
-
-                    .catch((error: RequestResponseState) => {
-                        setResult({done: true, good: false, message: error.msg})
-                    })
-
-                    .finally(() => setSending(false))
-                }
-               
             }
   
             else {
   
-                if(result.good)
+                if(result.good){
                     props.onGood({...props.func, funcName: newFuncName})
-                
+                    
+                }
                 else
                     props.onError()
             }
         }
+        props.onCancel()
+        document.location.reload(true)
     }
-  
+
     return (
         <Dialog open={true}>
             <DialogTitle>Add Functionality Details</DialogTitle>
             <Box className={classes.box}>
             <Grid item> 
+
                 <Grid container item xs>
                     <Grid className={classes.box} spacing={3} item container direction="column" alignItems="flex-start">
                         <Grid item xs={12} sm={6}>
@@ -402,9 +392,6 @@ export const DigitalTwinMonitoring = () => {
   const indexes = [
     {label: 'Functionality', key: 'funcName'},
     {label: 'Digital Twin', key: 'dtName'},
-    //{label: 'State', key: 'dtDescription'},
-    {label: '#Monitored Variables', key: 'dtMonitoredVariableEvent'},
-    {label: '#Monitored Events', key: 'dtMonitoredVariableEvent'},
   ]
 
   // Recuperar da base de dados as funcionalidades (Functionality)
@@ -437,20 +424,21 @@ export const DigitalTwinMonitoring = () => {
 
   const validateAndCreate = () => {
 
-  const validFunc= isFunctionalityValid(newFunc)
+  const validFunc = isFunctionalityValid(newFunc)
 
     if(!validFunc)
       setValidNewFunc(false)
-    else
-      setConfirmAddFunc(true)
-
+    else{
+        setConfirmAddFunc(true)
+    }
+     
+    
   }
 
   const buildFunctionality = () : Functionality => ({
     funcName: newFunc, funcId: functionalityId,
     funcdtId: digitalTwinIdChoice , funcUserId, funcdtName: digitalTwinChoice,
   })
-
 
   const addNewFunctionalityAction = () : Promise<string> => {
 
@@ -503,6 +491,7 @@ export const DigitalTwinMonitoring = () => {
     onSuccess: () => {
         addFunc()
         setNewFunc('')
+        document.location.reload(true)
     },
     action: addNewFunctionalityAction,
   }
@@ -514,9 +503,59 @@ export const DigitalTwinMonitoring = () => {
     }
   })
 
+   // Recuperar da base de dados os monitoredEvents (MonitoredEvent)
+   useMountEffect(() => {
+
+    setTimeout(() => {
+    
+    setFetching(true)
+    getOrDownloadMonitoredEvents(monitoredEvents)
+        .then((result: MonitoredEvent[]) => updateMonitoredEvents(result))
+        .catch((e:RequestResponseState) => setError(e.msg))
+        .finally(() => setFetching(false))
+    }, 0)
+
+    })
+
+    // Recuperar da base de dados as monitoredVariables (MonitoredVariable)
+      useMountEffect(() => {
+
+        setTimeout(() => {
+
+        setFetching(true)
+        getOrDownloadMonitoredVariables(monitoredVariables)
+            .then((result: MonitoredVariable[]) => updateMonitoredVariables(result))
+            .catch((e:RequestResponseState) => setError(e.msg))
+            .finally(() => setFetching(false))
+        }, 0)
+    })
+
   const deleteFunctionalityAction = (func: Functionality) : Promise<any> => {
 
     return new Promise(async(res:Function,rej:Function) => {
+
+        //let monitoredVariablesToDelete = []
+        let monitoredEventsToDelete = []
+        let i = 0
+        
+        // while(i < monitoredVariables.length) {
+        //     if(monitoredVariables[i].funcIdAssociated === func.funcId){
+        //         monitoredVariablesToDelete.push(monitoredVariables[i])
+        //     } 
+        //     i++
+        // }   
+
+        i=0
+
+        while(i < monitoredEvents.length) {
+            if(monitoredEvents[i].funcIdAssociated === func.funcId){
+                monitoredEventsToDelete.push(monitoredEvents[i])
+            } 
+            i++
+        }  
+
+        //console.log(monitoredVariablesToDelete)
+        console.log(monitoredEventsToDelete)
 
         if(!func.funcId) {
             rej('Error')
@@ -524,7 +563,23 @@ export const DigitalTwinMonitoring = () => {
         }
 
         try {
+
             const response : RequestResponseState = await deleteFunctionality(func.funcId)
+            
+            // i=0
+            // while(i < monitoredVariablesToDelete.length){
+            //     console.log("entrei aqui")
+            //     const response1 : RequestResponseState = await deleteMonitoredVariable(monitoredVariablesToDelete[i].idMonitoredVariable)
+            //     res(response1)
+            //     i++
+            // }
+
+            i=0 
+            while(i < monitoredEventsToDelete.length){
+                const response1 : RequestResponseState = await deleteMonitoredEvent(monitoredEventsToDelete[i].idMonitoredEvent)
+                i++
+            }
+
             res(response)
           }
 
@@ -573,45 +628,19 @@ export const DigitalTwinMonitoring = () => {
     }
    
   };
-
-  // Recuperar da base de dados as monitoredVariables (MonitoredVariable)
-   useMountEffect(() => {
-
-    setTimeout(() => {
-
-    setFetching(true)
-    getOrDownloadMonitoredVariables(monitoredVariables)
-        .then((result: MonitoredVariable[]) => updateMonitoredVariables(result))
-        .catch((e:RequestResponseState) => setError(e.msg))
-        .finally(() => setFetching(false))
-    }, 0)
-   })
-
-  // Recuperar da base de dados os monitoredEvents (MonitoredEvent)
-   useMountEffect(() => {
-
-    setTimeout(() => {
-    
-    setFetching(true)
-    getOrDownloadMonitoredEvents(monitoredEvents)
-        .then((result: MonitoredEvent[]) => updateMonitoredEvents(result))
-        .catch((e:RequestResponseState) => setError(e.msg))
-        .finally(() => setFetching(false))
-    }, 0)
-  })
-
   
-  const redirectToList = (func : Functionality) => setRedirectTo(func.funcId)
+  const redirectToList = (func : Functionality) => {
+      setRedirectTo(func.funcId)
+  }
   const indexes_test = [
     {label: 'delete', key: 'delete'},
   ]
-
+  
   if(redirectTo !== -1) 
   return  <Redirect to={`/functionality-details/${redirectTo}`} push={true}/>
-
-
+  
   return (
-    <Navigator title="New Digital Twin Functionality">
+    <Navigator title="Digital Twin Monitoring">
     <> 
         {error !== ''
                 ? <ConfirmAction title='Fetching Functionalities' currentState={errorFetchingFunctionalityState} states={{error: errorFetchingFunctionalityState}} onCancel={onCancel}/>
@@ -657,7 +686,7 @@ export const DigitalTwinMonitoring = () => {
                                     action: showEditing
                                 },
                                 details: {
-                                    action: redirectToList,
+                                    action: redirectToList
                                 },
                                 add: {
                                     action: showAddDetails
@@ -670,42 +699,68 @@ export const DigitalTwinMonitoring = () => {
                 </Grid>
                 <Grid item> 
                     <Grid container item xs>
-                    <Grid className={classes.box} spacing={1} item container direction="row">
-                        <Grid item xs={4}>
-                            <TextField
-                                helperText={!validNewFunc ? NEW_FUNCTIONALITY_RE.toString() : ''}
-                                error={!validNewFunc}
-                                label="Insert new functionality name" 
-                                required
-                                onChange={(event) => {
-                                    setNewFunc(event.target.value)
-                                    if(!validNewFunc)
-                                        setValidNewFunc(isFunctionalityValid(event.target.value.trim()))
-                                }}
-                                fullWidth
-                                value={newFunc}
-                            />
-                        </Grid>
-                        <Grid item xs={4}>
-                            <InputLabel id={`digital-twin-label-${newFunc}`}>Digital Twin</InputLabel>
-                            <Select labelId={`digital-twin-label-${newFunc}`} value={digitalTwinChoice} onChange={handleDigitalTwinChoice}>
-                            {(digitalTwins || []).map((digitalTwin: any) => {return <MenuItem key={digitalTwin.dtId} value={digitalTwin.dtName}>{digitalTwin.dtName}</MenuItem>})}
-                            </Select>
-                        </Grid>
-                        <Grid container justify="flex-end" spacing={1}>
-                            <Grid item>
-                                <Button
-                                color="primary"
-                                variant="contained"
-                                onClick={validateAndCreate}
-                                >
-                                Add Functionality
-                                </Button>
+                        <Grid className={classes.box} spacing={1} item container direction="row">
+                            <Grid item xs={4}>
+                                <TextField
+                                    helperText={!validNewFunc ? NEW_FUNCTIONALITY_RE.toString() : ''}
+                                    error={!validNewFunc}
+                                    label="Insert new functionality name" 
+                                    required
+                                    onChange={(event) => {
+                                        setNewFunc(event.target.value)
+                                        if(!validNewFunc)
+                                            setValidNewFunc(isFunctionalityValid(event.target.value.trim()))
+                                    }}
+                                    fullWidth
+                                    value={newFunc}
+                                />
+                            </Grid>
+                            <Grid item xs={4}>
+                                <InputLabel id={`digital-twin-label-${newFunc}`}>Digital Twin</InputLabel>
+                                <Select labelId={`digital-twin-label-${newFunc}`} value={digitalTwinChoice} onChange={handleDigitalTwinChoice}>
+                                {(digitalTwins || []).map((digitalTwin: any) => {return <MenuItem key={digitalTwin.dtId} value={digitalTwin.dtName}>{digitalTwin.dtName}</MenuItem>})}
+                                </Select>
+                            </Grid>
+                            <Grid container justify="flex-end" spacing={1}>
+                                <Grid item>
+                                    <Button
+                                    color="primary"
+                                    variant="contained"
+                                    onClick={validateAndCreate}
+                                    >
+                                    Add Functionality
+                                    </Button>
+                                </Grid>
                             </Grid>
                         </Grid>
                     </Grid>
+                </Grid>
+                <Grid item xs>
+                    Insert variable sampling time
+                </Grid>
+                <Grid item> 
+                    <Grid container item xs>
+                        <Grid className={classes.box} spacing={1} item container direction="row">
+                            <Grid item xs={4}>
+                                <InputLabel id={`digital-twin-label-${newFunc}`}>Sampling Time</InputLabel>
+                                <Select labelId={`digital-twin-label-${newFunc}`} value={digitalTwinChoice} onChange={handleDigitalTwinChoice}>
+                                {(digitalTwins || []).map((digitalTwin: any) => {return <MenuItem key={digitalTwin.dtId} value={digitalTwin.dtName}>{digitalTwin.dtName}</MenuItem>})}
+                                </Select>
+                            </Grid>
+                            <Grid container justify="flex-end" spacing={1}>
+                                <Grid item>
+                                    <Button
+                                    color="primary"
+                                    variant="contained"
+                                    onClick={validateAndCreate}
+                                    >
+                                    Add Sampling Time
+                                    </Button>
+                                </Grid>
+                            </Grid>
+                        </Grid>
                     </Grid>
-                 </Grid>
+                </Grid>
             </Grid>
         </>
         </LazyComponent>

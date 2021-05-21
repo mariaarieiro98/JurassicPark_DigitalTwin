@@ -5,7 +5,6 @@ import { SocketEngineInterface } from '../../SocketEngine'
 import { functionBlockMainController } from '../function-block/functionBlockMainController'
 import { RequestResponse } from '../../utils/request'
 import { digitalTwinMainController } from '../digital-twin/digitalTwinMainController'
-import { Console } from 'node:console'
 
 export class SmartComponentController implements SocketEngineInterface,OpcuaClientObserver {
 
@@ -206,11 +205,10 @@ export class SmartComponentController implements SocketEngineInterface,OpcuaClie
 
     }
 
-    notifyMonitoredVariablesCurrentValueChanged(monitoredVariableInstanceId: string, value: number, variable:string) {
-
+    notifyMonitoredVariablesCurrentValueChanged(fb: string, value: number, variable:string) {
+        
         this.data.monitoredVariableInstances = this.data.monitoredVariableInstances.map((instance: MonitoredVariableInstance) => {
-
-            if((instance.id === monitoredVariableInstanceId) && (instance.monitoredVariableName === variable))
+            if((instance.id === fb) && (instance.monitoredVariableName === variable))
                 instance.currentValue = value
             return instance
 
@@ -219,21 +217,63 @@ export class SmartComponentController implements SocketEngineInterface,OpcuaClie
         this.notifyClientMonitoredVariableValueUpdated()
     }
 
+    public readMVandNotify() {
+
+        this.readMonitoredVariablesAndNotifyClient()
+    }
+
     //Lê a informação relativa à variável VALUE
     private async readMonitoredVariablesAndNotifyClient() {
 
         try {
-
-            const monitoredVariables : {monitoredVariableName:string,scAssociated:string}[] = (await digitalTwinMainController.getMonitoredVariable(new RequestResponse())).getResult().map((monVar:MonitoredVariable) => ({monitoredVariableName: monVar.monitoredVariableName, scAssociated:monVar.scAssociated}))
+        
+            const monitoredVariables : {idMonitoredVariable: number, monitoredVariableName:string,scAssociated:string, fbAssociated:string}[] = (await digitalTwinMainController.getMonitoredVariable(new RequestResponse())).getResult().map((monVar:MonitoredVariable) => ({idMonitoredVariable: monVar.idMonitoredVariable, monitoredVariableName: monVar.monitoredVariableName, scAssociated:monVar.scAssociated, fbAssociated:monVar.fbAssociated}))
             
+            let dinasore = this.namespace.slice(this.namespace.length-1,this.namespace.length)
+            dinasore="dinasore"+dinasore
+        
             let i=0
-            const monitoredVariablesName = []
+            let monitoredVariablesName = []
+            let monitoredVariablesFb = []
+            let afterFilterMonFB = []
+            let afterFilterMonName = []
+        
             while(i<monitoredVariables.length){
-                monitoredVariablesName[i] = monitoredVariables[i].monitoredVariableName
+
+                if(dinasore === monitoredVariables[i].scAssociated){
+                    monitoredVariablesName[i] = monitoredVariables[i].monitoredVariableName
+                    monitoredVariablesFb[i] = monitoredVariables[i].fbAssociated
+                }
+                
+
                 i++
             }
+           
+            i=0
+           
+            for (const monVarName of monitoredVariablesName) {
 
-            const monitoredVariableValues = await this.opcuaController.getAllMonitoredVariableInstances(monitoredVariablesName)
+                if(monVarName){
+                   afterFilterMonName.push(monVarName) 
+                }
+                
+
+                i++
+            }
+            
+            i=0
+           
+            for (const monVarFb of monitoredVariablesFb) {
+
+                if(monVarFb){
+                    afterFilterMonFB.push(monVarFb) 
+                }
+                i++
+                
+
+            }
+
+            const monitoredVariableValues = await this.opcuaController.getAllMonitoredVariableInstances(afterFilterMonName, afterFilterMonFB)
             const promisesMVI = []
            
             monitoredVariableValues.forEach((element:{id:string, monitoredVariableName: string, currentValue: number}) => {
@@ -247,13 +287,13 @@ export class SmartComponentController implements SocketEngineInterface,OpcuaClie
                 const monVar : MonitoredVariableInstance = mvis[index].result[0] ?? undefined
                 
                 return {
-                    id:element.id, 
+                    id: element.id, 
                     currentValue: element.currentValue,
                     monitoredVariableName: element.monitoredVariableName,
                     sc: element.sc
                 }
             })  
-            
+          
             this.notifyClientMonitoredVariableValueUpdated()
         }
 
@@ -261,4 +301,5 @@ export class SmartComponentController implements SocketEngineInterface,OpcuaClie
             console.error(err)
         }
     }
+
 }

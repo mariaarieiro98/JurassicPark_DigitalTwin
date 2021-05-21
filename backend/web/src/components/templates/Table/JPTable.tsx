@@ -8,7 +8,8 @@ import TableHead from '@material-ui/core/TableHead'
 import TableRow from '@material-ui/core/TableRow'
 import Paper from '@material-ui/core/Paper'
 import { Box, Button } from '@material-ui/core'
-import { ArrowDropUp,ArrowDropDown,Delete,Edit, SettingsApplications, Add, AddBox, AddBoxOutlined, Settings } from '@material-ui/icons'
+import { ArrowDropUp,ArrowDropDown,Delete,Edit, AddBoxOutlined, Settings } from '@material-ui/icons'
+import FlashOnOutlinedIcon from '@material-ui/icons/FlashOnOutlined';
 import { useMountEffect } from '../../../utils/main'
 import {useGlobalStyles} from '../../../styles/main'
 import './JPTable.css'
@@ -23,6 +24,7 @@ const StyledTableCell = withStyles((theme: Theme) =>
     },
     body: {
       fontSize: 12,
+      alignContent: 'center',
     },
     
   }),
@@ -66,6 +68,9 @@ export const JPTable = (props: {
         add? :{
           action: (element: any) => void
         },
+        trigger_button? :{
+          action: (element: any) => void
+        }
       }
       sortedkey? : string}) => {
     
@@ -117,6 +122,7 @@ export const JPTable = (props: {
     const triggerEditElement = (element: any) => () => props.extra && props.extra.edit ? props.extra.edit.action(element) : {}
     const triggerDetailsElement = (element: any) => () => props.extra && props.extra.details ? props.extra.details.action(element) : {}
     const triggerAddElement = (element: any) => () => props.extra && props.extra.add ? props.extra.add.action(element) : {}
+    const triggerButtonElement = (element: any) => () => props.extra && props.extra.trigger_button ? props.extra.trigger_button.action(element) : {}
 
     const deleteLine = useCallback(() : Promise<string> => {
 
@@ -199,19 +205,38 @@ export const JPTable = (props: {
                           </StyledTableCell>)
                       }
                       {props.extra 
-                          ? props.extra.details ? <StyledTableCell></StyledTableCell> : null
+                          ? props.extra.details ? 
+                          <StyledTableCell className="Functionality Details">
+                            <Box>Details</Box>
+                          </StyledTableCell> : null
                           : null
                       }
                       {props.extra 
-                          ? props.extra.add ? <StyledTableCell></StyledTableCell> : null
+                          ? props.extra.add ? 
+                          <StyledTableCell className="Add Functionalities Details">
+                            <Box>Add Details</Box>
+                          </StyledTableCell> : null
                           : null
                       }
                       {props.extra 
-                          ? props.extra.edit ? <StyledTableCell></StyledTableCell> : null
+                          ? props.extra.edit ? 
+                          <StyledTableCell className="Edit">
+                            <Box>Edit</Box>
+                          </StyledTableCell> : null
                           : null
                       }
                       {props.extra 
-                          ? props.extra.delete ? <StyledTableCell></StyledTableCell> : null
+                          ? props.extra.trigger_button ? 
+                          <StyledTableCell className="Trigger-Button">
+                            <Box>Trigger Event</Box>
+                          </StyledTableCell> : null
+                          : null
+                      }
+                      {props.extra 
+                          ? props.extra.delete ? 
+                          <StyledTableCell className="Delete">
+                            <Box>Delete</Box>
+                          </StyledTableCell> : null
                           : null
                       }
                   </TableRow>
@@ -222,13 +247,12 @@ export const JPTable = (props: {
                     <StyledTableRow key={elIndex}>
                         {props.indexes.map((element: {key: string, label: string}, valIndex: number) => <StyledTableCell key={valIndex}>{row[element.key]?.data ?? row[element.key] }</StyledTableCell>)}
                         {props.extra 
-                          
                           ? props.extra.details
                             ? <StyledTableCell><Button disabled={row.detailsDisabled ?? false} onClick={triggerDetailsElement(row)} style={{minWidth:0}} variant="text" size="small"><Settings fontSize="small"/></Button></StyledTableCell> 
                             : null
                           : null
                         }
-                           {props.extra 
+                        {props.extra 
                           
                           ? props.extra.add
                             ? <StyledTableCell><Button disabled={row.addDisabled ?? false} onClick={triggerAddElement(row)} style={{minWidth:0}} variant="text" size="small"><AddBoxOutlined fontSize="small"/></Button></StyledTableCell> 
@@ -244,8 +268,15 @@ export const JPTable = (props: {
                         }
                         {props.extra 
                           
+                          ? props.extra.trigger_button
+                            ? <StyledTableCell><Button disabled={row.triggerButton ?? false} onClick={triggerButtonElement(row)} style={{minWidth:0}}  variant="text" size="small"><FlashOnOutlinedIcon fontSize="small"/></Button></StyledTableCell> 
+                            : null
+                          : null
+                        }
+                        {props.extra 
+                          
                           ? props.extra.delete 
-                            ? <StyledTableCell><Button disabled={row.deleteDisabled ?? false} onClick={setDeletingElement(row)} style={{minWidth:0}} variant="text" size="small"><Delete fontSize="small"/></Button></StyledTableCell> 
+                            ? <StyledTableCell><Button disabled={row.deleteDisabled ?? false} onClick={setDeletingElement(row)} style={{minWidth:0}}  variant="text" size="small"><Delete fontSize="small"/></Button></StyledTableCell> 
                             : null
                           : null
                         }

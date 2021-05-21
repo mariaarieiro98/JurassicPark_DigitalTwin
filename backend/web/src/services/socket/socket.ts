@@ -5,7 +5,9 @@ export enum SOCKET_EVENT {
     UPDATED_SC_EVENT = 'smart-component-updated',
     EDITED_FBI_EVENT = 'smart-component-fbi-updated',
     INITIAL_DATA = 'initial-data',
-    EDITED_MVI_EVENT = 'smart-component-mvi-updated'
+    EDITED_MVI_EVENT = 'smart-component-mvi-updated',
+    UPDATE_BACKEND = 'update-backend',
+    TRIGGER_EVENT = 'trigger-event'
 }
 
 export class SocketConnection {
@@ -87,9 +89,10 @@ export class SocketConnection {
         this.socket?.on(event,listener)
     }
 
-    // public emit(event: SOCKET_EVENT, data: any) {
-    //     this.socket?.emit(event, data , (data: any) => {
-    //         console.log(data); 
-    //     })
-    // }
+    public emit(event: SOCKET_EVENT, data: any) {
+        //console.log(event)
+        this.socket?.emit(event, data , (data: any) => {
+            //console.log(data); 
+        })
+    }
 } 

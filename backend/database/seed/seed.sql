@@ -64,15 +64,33 @@ CREATE TABLE Functionality(
     FOREIGN KEY(funcUserId) references User(userId) ON DELETE SET NULL ON UPDATE CASCADE
 );
 
--- CREATE TABLE AssociatedSmartComponent(
+CREATE TABLE AssociatedSmartComponent(
 
---     assSCid INT PRIMARY KEY AUTO_INCREMENT,
---     assSCfuncId INT NOT NULL,
---     assSCname VARCHAR(50) NOT NULL UNIQUE,
+    idAssociatedSmartComponent INT PRIMARY KEY AUTO_INCREMENT,
+    scDtId INT NOT NULL,
+    scName VARCHAR(50) NOT NULL UNIQUE,
+    associatedScUserId INT,
 
---     FOREIGN KEY(assSCfuncId) references Functionality(funcId) ON UPDATE CASCADE
--- );
+    FOREIGN KEY(scDtId) references DigitalTwin(dtId) ON UPDATE CASCADE
+);
 
+CREATE TABLE MonitoredVariable(
+
+    idMonitoredVariable INT PRIMARY KEY AUTO_INCREMENT,
+    funcIdAssociated INT NOT NULL,
+    monitoredVariableName VARCHAR(50) NOT NULL,
+    fbAssociated VARCHAR(50) NOT NULL,
+    scAssociated VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE MonitoredEvent(
+
+    idMonitoredEvent INT PRIMARY KEY AUTO_INCREMENT,
+    funcIdAssociated INT NOT NULL,
+    monitoredEventName VARCHAR(50) NOT NULL,
+    fbAssociated VARCHAR(50) NOT NULL,
+    scAssociated VARCHAR(50) NOT NULL
+);
 
 CREATE TABLE FunctionBlock(
 
@@ -243,7 +261,6 @@ INSERT INTO User(userLoginName,userPassword,userName) VALUES("admin","admin","ad
 
 INSERT INTO FBCategory(fbcName,fbcUserId) VALUES("Main",1);
 INSERT INTO FBCategory(fbcName,fbcUserId) VALUES("Systec",1);
---INSERT INTO FBCategory(fbcName,fbcUserId) VALUES("Conseguimos?",1);
 
 -- INSERT INTO FunctionBlock(fbType,fbDescription,fbGeneralCategory,fbFbcId,fbUserId) VALUES("MOVING_AVERAGE","Moving Average Function Block","SERVICE",1,1);
 

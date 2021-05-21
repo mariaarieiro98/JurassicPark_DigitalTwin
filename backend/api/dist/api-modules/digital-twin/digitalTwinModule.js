@@ -357,14 +357,14 @@ digitalTwinModule.addRoute({
     }
 });
 digitalTwinModule.addRoute({
-    path: /^\/variable-to-monitor\/?$/,
-    method: 'post',
+    path: /^\/monitored-event\/-?[0-9]+\/?$/,
+    method: 'delete',
     withAuthentication: false,
     mountRoute: (api) => {
-        api.app.post('/variable-to-monitor', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+        api.app.delete('/monitored-event/:id', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             try {
-                let response = yield request_1.checkParameters(['monitoredVariable'], req.body);
-                yield digitalTwinMainController_1.digitalTwinMainController.createVariableToMonitor(req.body.monitoredVariable, response);
+                let response = yield request_1.checkParameters(['id'], req.params);
+                yield digitalTwinMainController_1.digitalTwinMainController.removeMonitoredEvent(parseInt(req.params.id), response);
                 res.json(response.get());
             }
             catch (error) {

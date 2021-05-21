@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, Divider, Grid } from '@material-ui/core'
 import React, { useState } from 'react'
 import { match, Redirect, useRouteMatch } from 'react-router-dom'
 import { routes } from '../../App'
-import { Functionality, MonitoredEvent, MonitoredVariable, MonitoredVariableInstance, SmartComponent } from '../../model'
+import { Functionality, MonitoredEvent, MonitoredVariable, MonitoredVariableInstance } from '../../model'
 import { FunctionalityActions, MonitoredEventActions, MonitoredVariableActions } from '../../redux/actions'
 import { RequestResponseState } from '../../services/api/api'
 import { getOrDownloadFunctionalities, getOrDownloadMonitoredEvents, getOrDownloadMonitoredVariables } from '../../utils/digitalTwins'
@@ -13,7 +13,10 @@ import { JPTable } from '../templates/Table/JPTable'
 import { FunctionalityForm } from './FunctionalityForm'
 import { SocketConnection, SOCKET_EVENT } from '../../services/socket/socket'
 import { useSmartComponentStyles } from '../SmartComponents/style'
-import { deleteMonitoredVariable } from '../../services/api/digital-twin'
+import { deleteMonitoredEvent, deleteMonitoredVariable } from '../../services/api/digital-twin'
+
+let flagDezSegundos = true
+let flagFirstTime = true
 
 //Esta página pretende dispor informação mais detalhada da funcionalidade correspondente disponível na página "DigitalTwinMonitoring"
 
@@ -26,8 +29,23 @@ interface MonitoredVariableWithCurrentValue extends MonitoredVariableInstance {
     }
 }
 
-export const FunctionalityDetails = () => {
+function startCountdown(seconds: number) {
+          
+    let counter = seconds;
 
+    const interval = setInterval(() => {
+      counter--;
+        
+      if (counter < 0 ) {
+        clearInterval(interval);
+        flagDezSegundos = true
+        startCountdown(10)
+      }
+    }, 1000);
+}
+
+export const FunctionalityDetails = () => {
+    
     //Recupera o id da funcionalidade seleccionada anteriormente na página Digital Twin Monitoring
     const matchParams : match = useRouteMatch()
     const id = (matchParams.params as any).id
@@ -51,7 +69,6 @@ export const FunctionalityDetails = () => {
     }
 
     useMountEffect(() => {
-
         setFetching(true)
         getOrDownloadMonitoredVariables(monitoredVariables)
             .then((result: MonitoredVariable[]) => {
@@ -62,7 +79,6 @@ export const FunctionalityDetails = () => {
                 setError(e.msg)
             })
             .finally(() => setFetching(false))
-
     })
 
     // Recuperar da base de dados os eventos que estão a ser monitorizados (MonitoredEvent)
@@ -100,8 +116,6 @@ export const FunctionalityDetails = () => {
         {label: 'Function Block', key: 'id'},
         {label: 'Smart Component', key: 'sc'},
         {label: 'Current Value', key: 'currentValueData'},
-        //{label: 'Graph', key: 'dtName'},
-        //{label: 'Remove', key: 'dtName'},
     ]
 
     // Cabeçalhos da tabela Event + Funções Necessárias
@@ -109,10 +123,6 @@ export const FunctionalityDetails = () => {
         {label: 'Event', key: 'monitoredEventName'},
         {label: 'Function Block', key: 'fbAssociated'},
         {label: 'Smart Component', key: 'scAssociated'},
-        {label: 'Trigger', key: 'dtName'},
-        //{label: 'Current Value', key: 'sc.scState'},
-        //{label: 'Graph', key: 'dtName'},
-        //{label: 'Remove', key: 'dtName'},
     ]
 
     const getDataMonitoredEvent = () =>  selectedMonitoredEvent.map((monitoredEvent: MonitoredEvent) => {    
@@ -123,18 +133,54 @@ export const FunctionalityDetails = () => {
 
     })
 
-    const deleteMonitoredVariableAction = (monVar: MonitoredVariable) : Promise<any> => {
-
+    const deleteMonitoredVariableAction = (monVar: MonitoredVariableInstance) : Promise<any> => {
+        
         return new Promise(async(res:Function,rej:Function) => {
+            
+            let i = 0
+            let idMonitoredVariable: number | undefined = 0
+
+            while(i < selectedMonitoredVariableGlobal.length) {
+                if((selectedMonitoredVariableGlobal[i].monitoredVariableName === monVar.monitoredVariableName) && (selectedMonitoredVariableGlobal[i].scAssociated === monVar.sc) && (selectedMonitoredVariableGlobal[i].fbAssociated === monVar.id)){
+                    idMonitoredVariable = selectedMonitoredVariableGlobal[i].idMonitoredVariable
+                }
+                i++
+            }
     
-            if(!monVar.idMonitoredVariable) {
+            console.log("idMonitoredVariable:",idMonitoredVariable)
+
+            if(!idMonitoredVariable) {
+                console.log("entrei aqui")
                 rej('Error')
                 return
             }
             
             try {
-                console.log("id:",monVar.idMonitoredVariable)
-                const response : RequestResponseState = await deleteMonitoredVariable(monVar.idMonitoredVariable)
+                console.log("idMonitoredVariable:",idMonitoredVariable)
+                const response : RequestResponseState = await deleteMonitoredVariable(idMonitoredVariable)
+                res(response)
+              }
+    
+            catch(err) {
+                rej(err)
+            }
+        })
+    }
+
+    const deleteMonitoredEventAction = (monEv: MonitoredEvent) : Promise<any> => {
+        
+        return new Promise(async(res:Function,rej:Function) => {
+            console.log(monEv.idMonitoredEvent)
+
+            if(!monEv.idMonitoredEvent) {
+                console.log("entrei aqui")
+                rej('Error')
+                return
+            }
+            
+            try {
+                console.log("idMonitoredEvent:", monEv.idMonitoredEvent)
+                const response : RequestResponseState = await deleteMonitoredEvent(monEv.idMonitoredEvent)
                 res(response)
               }
     
@@ -154,7 +200,6 @@ export const FunctionalityDetails = () => {
     const updateFunctionalities = (funcs: Functionality[]) => dispatchFunctionalityActions(FunctionalityActions.updateFunctionalities(funcs))
 
     useMountEffect(() => {
-
     setTimeout(() => {
 
     setFetching(true)
@@ -186,44 +231,60 @@ export const FunctionalityDetails = () => {
 
     const updateMonitoredVariableInstances = (monVars:MonitoredVariableInstance[]) => setMonitoredVariableInstances(getMonitoredVariablesWithCurrentValue(monVars))
 
-    const updateMonitoredVariableInstance = (monVars: MonitoredVariableInstance[]) => {
+    const updateMonitoredVariableInstance = (monVars: MonitoredVariableInstance[]) => { 
 
-        for(const monVar of monVars) {
+        //console.log("monvars:", monVars)    
+        if(flagFirstTime){
 
-            if(selectedMonitoredVariableGlobal.length === 0){
-                return []
-            }
+            flagFirstTime = false
+            startCountdown(10)
+        }
+    
+        if(flagDezSegundos){
+          
+            flagDezSegundos=false
             
-            else{
-
-               for(const selectedMonVar of selectedMonitoredVariableGlobal){
-
-                    if((selectedMonVar.monitoredVariableName === monVar.monitoredVariableName) && (selectedMonVar.scAssociated === monVar.sc)){
-                        
-                        setMonitoredVariableInstances((prevMonitoredVariables: MonitoredVariableWithCurrentValue[]) => {
-
-                            let newMonVar = true
+            for(const monVar of monVars) {
+            
+                if(selectedMonitoredVariableGlobal.length === 0){
+                    return []
+                }
                 
-                            const newMonitoredVariables = getMonitoredVariablesWithCurrentValue(prevMonitoredVariables.map((oMonVar:MonitoredVariableWithCurrentValue) => {
-                
-                                if((oMonVar.monitoredVariableName === monVar.monitoredVariableName) && (oMonVar.sc === monVar.sc) &&  (oMonVar.id === monVar.id)) {
-                                    newMonVar = false
-                                    return monVar
+                     
+                else{
+    
+                   for(const selectedMonVar of selectedMonitoredVariableGlobal){
+                              
+                        if((selectedMonVar.monitoredVariableName === monVar.monitoredVariableName) && (selectedMonVar.scAssociated === monVar.sc) && (selectedMonVar.fbAssociated === monVar.id)){
+                           
+                            setMonitoredVariableInstances((prevMonitoredVariables: MonitoredVariableWithCurrentValue[]) => {
+    
+                                let newMonVar = true
+                    
+                                const newMonitoredVariables = getMonitoredVariablesWithCurrentValue(prevMonitoredVariables.map((oMonVar:MonitoredVariableWithCurrentValue) => {
+                    
+                                    if((oMonVar.monitoredVariableName === monVar.monitoredVariableName) && (oMonVar.sc === monVar.sc) &&  (oMonVar.id === monVar.id)) {
+                                        newMonVar = false
+                                        return monVar
+                                    }
+                                    return oMonVar
+                    
+                                }))
+    
+                                if(newMonVar){
+                                    return [...prevMonitoredVariables, addCurrentValueData(monVar)]
                                 }
-                                return oMonVar
-                
-                            }))
-                        
-                            if(newMonVar)
-                                return [...prevMonitoredVariables, addCurrentValueData(monVar)]
-                            return newMonitoredVariables
-                
-                        })
+                                return newMonitoredVariables
+                    
+                            })
+                        }
                     }
                 }
+                
             }
-            
+        
         }
+       
      
     }
 
@@ -255,19 +316,39 @@ export const FunctionalityDetails = () => {
         setTimeout(() => {
 
             socket.connect(() => {}, onDisconnect)
+            socket.emit(SOCKET_EVENT.UPDATE_BACKEND,"UpdateMonitoredVariables")
             socket.addListener(SOCKET_EVENT.EDITED_MVI_EVENT, (data) => updateMonitoredVariableInstance(data))
+            
         }, 0)
 
     }, () => socket?.disconnect())
 
-   
+
+    //Função de trigger --> manipulação de dados quando carrega no botão de trigger
+    const triggerEventAction = (monEv: MonitoredEvent) : Promise<any> => {
+        
+        return new Promise(async(res:Function,rej:Function) => {
+            
+            try {
+
+                socket.connect(() => {}, onDisconnect)
+                socket.emit(SOCKET_EVENT.TRIGGER_EVENT,monEv)
+                res("hello")
+
+              }
+    
+            catch(err) {
+                rej(err)
+            }
+        })
+    }
+
     if(redirectTo !== "") 
     return <Redirect to={redirectTo} push={true} />
 
     return(
-    <Navigator title="Digital Twin monitoring">
+    <Navigator title="Digital Twin Monitoring">
     <>
-    {/* <meta http-equiv="refresh" content="20" /> */}
         <Grid item>
             <Card>
                 <CardHeader title={functionalityName} />
@@ -281,13 +362,13 @@ export const FunctionalityDetails = () => {
                                     updateData={updateMonitoredVariableInstances} 
                                     indexes={indexes_variable} 
                                     tName='MonitoredVariable'
-                                    extra={{
+                                    extra = {{   
                                         delete: {
-                                            action: deleteMonitoredVariableAction,
-                                            labelKey: 'monitoredVariableName',
-                                            onSuccessDelete: () => {}
-                                        }
-                                    }} 
+                                        action: deleteMonitoredVariableAction,
+                                        labelKey: 'idMonitoredVariable',
+                                        onSuccessDelete: () => {}
+                                    }}}
+                                 
                                 />
                             </Grid>
                         </Grid>
@@ -301,7 +382,18 @@ export const FunctionalityDetails = () => {
                                     updateData={updateMonitoredEvents} 
                                     indexes={indexes_event} 
                                     tName='MonitoredEvent'
+                                    extra={{
+                                        trigger_button: {
+                                            action: triggerEventAction
+                                        },
+                                        delete: {
+                                            action: deleteMonitoredEventAction,
+                                            labelKey: 'idMonitoredEvent',
+                                            onSuccessDelete: () => {}
+                                        }
+                                    }} 
                                 />
+                                
                             </Grid>
                             
                         </Grid>
@@ -312,6 +404,7 @@ export const FunctionalityDetails = () => {
             cancel={{action: redirectToList, label: 'Cancel'}}
         />
     </>
+    
     </Navigator>
     )
 }

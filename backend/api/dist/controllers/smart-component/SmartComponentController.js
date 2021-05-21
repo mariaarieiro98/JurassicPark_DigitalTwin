@@ -136,26 +136,51 @@ class SmartComponentController {
         });
         this.notifyClientFBIUpdated();
     }
-    notifyMonitoredVariablesCurrentValueChanged(monitoredVariableInstanceId, value, variable) {
+    notifyMonitoredVariablesCurrentValueChanged(fb, value, variable) {
         this.data.monitoredVariableInstances = this.data.monitoredVariableInstances.map((instance) => {
-            if ((instance.id === monitoredVariableInstanceId) && (instance.monitoredVariableName === variable))
+            if ((instance.id === fb) && (instance.monitoredVariableName === variable))
                 instance.currentValue = value;
             return instance;
         });
         this.notifyClientMonitoredVariableValueUpdated();
     }
+    readMVandNotify() {
+        this.readMonitoredVariablesAndNotifyClient();
+    }
     //Lê a informação relativa à variável VALUE
     readMonitoredVariablesAndNotifyClient() {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const monitoredVariables = (yield digitalTwinMainController_1.digitalTwinMainController.getMonitoredVariable(new request_1.RequestResponse())).getResult().map((monVar) => ({ monitoredVariableName: monVar.monitoredVariableName, scAssociated: monVar.scAssociated }));
+                const monitoredVariables = (yield digitalTwinMainController_1.digitalTwinMainController.getMonitoredVariable(new request_1.RequestResponse())).getResult().map((monVar) => ({ idMonitoredVariable: monVar.idMonitoredVariable, monitoredVariableName: monVar.monitoredVariableName, scAssociated: monVar.scAssociated, fbAssociated: monVar.fbAssociated }));
+                let dinasore = this.namespace.slice(this.namespace.length - 1, this.namespace.length);
+                dinasore = "dinasore" + dinasore;
                 let i = 0;
-                const monitoredVariablesName = [];
+                let monitoredVariablesName = [];
+                let monitoredVariablesFb = [];
+                let afterFilterMonFB = [];
+                let afterFilterMonName = [];
                 while (i < monitoredVariables.length) {
-                    monitoredVariablesName[i] = monitoredVariables[i].monitoredVariableName;
+                    if (dinasore === monitoredVariables[i].scAssociated) {
+                        monitoredVariablesName[i] = monitoredVariables[i].monitoredVariableName;
+                        monitoredVariablesFb[i] = monitoredVariables[i].fbAssociated;
+                    }
                     i++;
                 }
-                const monitoredVariableValues = yield this.opcuaController.getAllMonitoredVariableInstances(monitoredVariablesName);
+                i = 0;
+                for (const monVarName of monitoredVariablesName) {
+                    if (monVarName) {
+                        afterFilterMonName.push(monVarName);
+                    }
+                    i++;
+                }
+                i = 0;
+                for (const monVarFb of monitoredVariablesFb) {
+                    if (monVarFb) {
+                        afterFilterMonFB.push(monVarFb);
+                    }
+                    i++;
+                }
+                const monitoredVariableValues = yield this.opcuaController.getAllMonitoredVariableInstances(afterFilterMonName, afterFilterMonFB);
                 const promisesMVI = [];
                 monitoredVariableValues.forEach((element) => {
                     promisesMVI.push(digitalTwinMainController_1.digitalTwinMainController.getMonitoredVariable(new request_1.RequestResponse(), [{ key: 'monitoredVariableName', value: element.monitoredVariableName }]));

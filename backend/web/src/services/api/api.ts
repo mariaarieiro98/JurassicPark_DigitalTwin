@@ -29,8 +29,7 @@ class API {
         associatedSmartComponents: 'associated-smart-components',
         monitoredVariables: 'monitored-variable',
         monitoredEvents: 'monitored-event',
-        monitoredVariableInstances: 'monitored-variable-instance',
-        variablesToMonitor: 'variable-to-monitor'
+        monitoredVariableInstances: 'monitored-variable-instance'
     }
 
     
@@ -106,12 +105,6 @@ class API {
     public getMonitoredEventPath = (method: RouteMethod, id?: number) : Route => ({
         
         path: `${this.base}${this.resources.monitoredEvents}/${id ? id : ''}`,
-        method: method 
-    })
-
-    public getVariableToMonitorPath = (method: RouteMethod, id?: number) : Route => ({
-        
-        path: `${this.base}${this.resources.variablesToMonitor}/${id ? id : ''}`,
         method: method 
     })
 }

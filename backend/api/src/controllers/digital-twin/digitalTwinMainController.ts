@@ -1,6 +1,6 @@
 import { DatabaseUtils, Statement, Operation } from "../../utils/database"
 import { RequestResponse } from "../../utils/request"
-import { GeneralErrors , MonitoredEvent, Tables, VariableToMonitor} from "../../model"
+import { GeneralErrors , MonitoredEvent, Tables } from "../../model"
 import { groupBy } from "../../utils/utils"
 import { Functionality ,DigitalTwin} from "../../model"
 import { AssociatedSmartComponent } from "../../model/model/AssociatedSmartComponent"
@@ -38,7 +38,7 @@ export class DigitalTwinMainController {
 
         return grouped.map((monoEv:any) => ({
 
-            idMonitoredVariable: parseInt(monoEv.idMonitoredEvent), monitoredEventName:monoEv.monitoredEventName, funcIdAssociated:monoEv.funcIdAssociated, funcName:monoEv.funcName,
+            idMonitoredEvent: parseInt(monoEv.idMonitoredEvent), monitoredEventName:monoEv.monitoredEventName, funcIdAssociated:monoEv.funcIdAssociated, funcName:monoEv.funcName,
             fbAssociated:monoEv.fbAssociated, scAssociated:monoEv.scAssociated
         }))
 
@@ -433,6 +433,7 @@ export class DigitalTwinMainController {
         return new Promise(async (res: Function, rej: Function) => {
 
             try {
+                
                 console.log("id:", id)
 
                 const oldMonitoredVariable = (await DatabaseUtils.executeStatement('SELECT monitoredVariableName FROM MonitoredVariable WHERE idMonitoredVariable = ?', [id])).result[0]
@@ -548,22 +549,29 @@ export class DigitalTwinMainController {
 
     }
 
-    public createVariableToMonitor = (monitoredVariable: string, response: RequestResponse) : Promise<RequestResponse> => {
-
+    public removeMonitoredEvent = (id: number, response: RequestResponse) : Promise<RequestResponse> => {    
+      
         return new Promise(async (res: Function, rej: Function) => {
 
             try {
 
-                const insertVariableToMonitor : string = 'Insert INTO VariableToMonitor(variableName) VALUES(?)'
-                const result = await DatabaseUtils.executeStatement(insertVariableToMonitor, [monitoredVariable])
-                response.setExtra({lastInsertedId:result.result.insertId})
+                const oldMonitoredEvent = (await DatabaseUtils.executeStatement('SELECT monitoredEventName FROM MonitoredEvent WHERE idMonitoredEvent = ?', [id])).result[0]
+    
+                if(!oldMonitoredEvent) {
+                    response.setErrorState('No monitored-event found')
+                    rej(response)
+                    return
+                }
+
+                const deleteMonitoredEventStmt : string = 'DELETE FROM MonitoredEvent WHERE idMonitoredEvent= ?'
+                await DatabaseUtils.executeStatement(deleteMonitoredEventStmt, [id])
                 res(response)
 
             }
 
             catch(error) {
                 console.error(error)
-                response.setErrorState('Error Creating VariableToMonitor',GeneralErrors.general.code)
+                response.setErrorState('Error Deleting Monitored Event',GeneralErrors.general.code)
                 rej(response)
             }
 

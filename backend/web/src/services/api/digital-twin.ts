@@ -1,4 +1,4 @@
-import { DigitalTwin, Functionality, MonitoredEvent, MonitoredVariable, VariableToMonitor} from '../../model'
+import { DigitalTwin, Functionality, MonitoredEvent, MonitoredVariable } from '../../model'
 import { apiRoutes, RequestResponseState, RouteMethod, fetchRequest } from './api'
 import { AssociatedSmartComponent } from "../../model/model/AssociatedSmartComponent";
 
@@ -20,15 +20,15 @@ export const createMonitoredVariable = (monitoredVariable: MonitoredVariable) : 
 
 export const createMonitoredEvent = (monitoredEvent: MonitoredEvent) : Promise<RequestResponseState> => fetchRequest(apiRoutes.getMonitoredEventPath(RouteMethod.post),false, monitoredEvent)               
 
-export const createVariableToMonitor = (monitoredVariable: string) : Promise<RequestResponseState> => fetchRequest(apiRoutes.getVariableToMonitorPath(RouteMethod.post),false, {monitoredVariable})   
-
 export const createAssociatedSmartComponents= (associatedSmartComponent: AssociatedSmartComponent) : Promise<RequestResponseState> => fetchRequest(apiRoutes.getAssociatedSmartComponentPath(RouteMethod.post),false, associatedSmartComponent)            
 
 export const deleteDigitalTwin = (id:number) : Promise<RequestResponseState> => fetchRequest(apiRoutes.getDigitalTwinPath(RouteMethod.delete,id))            
 
-export const deleteFunctionality= (id:number) : Promise<RequestResponseState> => fetchRequest(apiRoutes.getFunctionalityPath(RouteMethod.delete,id))
+export const deleteFunctionality = (id:number) : Promise<RequestResponseState> => fetchRequest(apiRoutes.getFunctionalityPath(RouteMethod.delete,id))
 
-export const deleteMonitoredVariable= (id:number) : Promise<RequestResponseState> => fetchRequest(apiRoutes.getMonitoredVariablePath(RouteMethod.delete,id))    
+export const deleteMonitoredVariable = (id:number) : Promise<RequestResponseState> => fetchRequest(apiRoutes.getMonitoredVariablePath(RouteMethod.delete,id))    
+
+export const deleteMonitoredEvent = (id:number) : Promise<RequestResponseState> => fetchRequest(apiRoutes.getMonitoredEventPath(RouteMethod.delete,id))    
 
 export const updateDigitalTwin = (id: number, digitalTwinName: string) : Promise<RequestResponseState> => fetchRequest(apiRoutes.getDigitalTwinPath(RouteMethod.put,id),false,{digitalTwinName})            
 

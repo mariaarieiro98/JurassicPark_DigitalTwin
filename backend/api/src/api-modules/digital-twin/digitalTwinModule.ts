@@ -3,7 +3,7 @@ import { ApiModule } from "../module"
 import { Api, FRequest } from '../../Api';
 import { RequestResponse, checkParameters } from '../../utils/request';
 import { digitalTwinMainController } from '../../controllers/digital-twin/digitalTwinMainController';
-import { Functionality, MonitoredEvent, VariableToMonitor } from '../../model';
+import { Functionality, MonitoredEvent } from '../../model';
 import { AssociatedSmartComponent } from '../../model/model/AssociatedSmartComponent';
 import { MonitoredVariable } from '../../model/model/MonitoredVariable';
 
@@ -475,16 +475,17 @@ digitalTwinModule.addRoute({
 
 digitalTwinModule.addRoute({
     
-    path: /^\/variable-to-monitor\/?$/,
-    method: 'post',
+    path: /^\/monitored-event\/-?[0-9]+\/?$/,
+    method: 'delete',
     withAuthentication: false,
     mountRoute: (api: Api) => {
 
-        api.app.post('/variable-to-monitor', async (req: FRequest, res: express.Response) => {
+        api.app.delete('/monitored-event/:id', async (req: FRequest, res: express.Response) => {
 
             try {
-                let response : RequestResponse = await checkParameters(['monitoredVariable'],req.body)
-                await digitalTwinMainController.createVariableToMonitor(req.body.monitoredVariable,response)
+                
+                let response : RequestResponse = await checkParameters(['id'],req.params)
+                await digitalTwinMainController.removeMonitoredEvent(parseInt(req.params.id),response)
                 res.json(response.get())
             }
     
@@ -493,6 +494,7 @@ digitalTwinModule.addRoute({
                 res.status(400)
                 res.json(error)
             }
+
         })
 
     }

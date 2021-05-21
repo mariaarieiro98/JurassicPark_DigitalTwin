@@ -20,8 +20,4 @@ export interface Functionality {
     funcdtId: number
     funcscId: number 
     funcscName: string
-    // funcMonitoredInputEvents: Event[]
-    // funcMonitoredOutputEvents: Event[]
-    // funcMonitoredInputVariables: Variable[]
-    // funcMonitoredOutputVariables: Variable[]
 } 

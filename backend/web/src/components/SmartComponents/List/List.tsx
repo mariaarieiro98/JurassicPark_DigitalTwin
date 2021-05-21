@@ -73,7 +73,7 @@ export const SmartComponentList = () : React.ReactElement => {
     const updateSmartObjects = (scs:SmartComponent[]) => setSmartComponents(getComponentsWithStateData(scs))
 
     const updateSmartComponent = (sc: SmartComponent) => {
-        console.log("sc:", sc)
+        //console.log("sc:", sc)
 
         setSmartComponents((prevComponents: SmartComponentWithDataState[]) => {
 

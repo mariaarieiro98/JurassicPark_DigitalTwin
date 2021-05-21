@@ -25,6 +25,7 @@ class SmartComponentMainController {
             for (let i = 0; i < runningSmartComponents.length; i++) {
                 const runningSmartComponent = runningSmartComponents[i];
                 const [address, port, lastName, lastType] = runningSmartComponent.split(';');
+                console.log("running:", runningSmartComponents);
                 yield this.createOrUpdateSmartObject(new request_1.RequestResponse(), address, parseInt(port), true, lastName, lastType);
             }
         }))
@@ -63,7 +64,8 @@ class SmartComponentMainController {
                     res(response);
                 }
                 else {
-                    scController = yield SmartComponentController_1.SmartComponentController.buildSmartComponentController(address, port, SmartComponentMainController.id++, name, type);
+                    let id = name.match(/\d+/g).map(Number);
+                    scController = yield SmartComponentController_1.SmartComponentController.buildSmartComponentController(address, port, id[0], name, type);
                     this.smartComponentIndividualControllers.push(scController);
                     response.setResult('Smart Object Registered');
                     res(response);
@@ -78,6 +80,13 @@ class SmartComponentMainController {
                 rej(response);
             }
         }));
+    }
+    readAllFunctions() {
+        let existingSCS = this.getSmartObjects(new request_1.RequestResponse());
+        let smartComponentController = existingSCS.getResult();
+        for (const scc of smartComponentController) {
+            scc.readMVandNotify();
+        }
     }
 }
 SmartComponentMainController.RUNNING_SC_FILE = './.running_sc.csv';

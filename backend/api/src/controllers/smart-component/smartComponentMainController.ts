@@ -20,6 +20,7 @@ class SmartComponentMainController implements SocketEngineInterface {
                 for(let i = 0; i < runningSmartComponents.length; i++) {
                     const runningSmartComponent : string = runningSmartComponents[i]
                     const [address,port,lastName,lastType] = runningSmartComponent.split(';')
+                    console.log("running:", runningSmartComponents)
                     await this.createOrUpdateSmartObject(new RequestResponse(),address,parseInt(port),true,lastName,lastType)
                 }
 
@@ -76,8 +77,10 @@ class SmartComponentMainController implements SocketEngineInterface {
                 }
 
                 else {
-                   
-                    scController = await SmartComponentController.buildSmartComponentController(address, port, SmartComponentMainController.id++,name,type)
+
+                    let id = name.match(/\d+/g).map(Number)
+                    
+                    scController = await SmartComponentController.buildSmartComponentController(address, port, id[0], name,type)
 
                     this.smartComponentIndividualControllers.push(scController)
                     response.setResult('Smart Object Registered')
@@ -96,6 +99,18 @@ class SmartComponentMainController implements SocketEngineInterface {
                 rej(response)
             }
         })
+
+    }
+
+    public readAllFunctions(){
+        
+        let existingSCS = this.getSmartObjects(new RequestResponse())
+    
+        let smartComponentController = existingSCS.getResult()
+
+        for(const scc of smartComponentController){
+            scc.readMVandNotify()
+        }
 
     }
 

@@ -34,7 +34,7 @@ export class ApiModule {
     mountRoute = (apiRoute : ApiRoute, api: Api) => {
 
         if(!apiRoute.withAuthentication) {
-            
+  
             const findRegex = api.URLS_FILTERS_NO_COOKIE.find(regex => regex.toString() === apiRoute.path.toString())
             const index = api.URLS_FILTERS_NO_COOKIE.indexOf(findRegex)
 

@@ -177,6 +177,7 @@ exports.getLinesOfFiles = (file) => {
                     rej(err.toString());
                 }
                 else {
+                    //console.log(data.toString())
                     res(data.toString().split('\n').filter((s) => s !== ''));
                 }
             });
@@ -223,4 +224,16 @@ exports.getFileStats = (name) => {
         }
     });
 };
+function startCountdown(seconds) {
+    let counter = seconds;
+    const interval = setInterval(() => {
+        console.log(counter);
+        counter--;
+        if (counter < 0) {
+            clearInterval(interval);
+            console.log('Ding!');
+        }
+    }, 1000);
+}
+exports.startCountdown = startCountdown;
 //# sourceMappingURL=utils.js.map

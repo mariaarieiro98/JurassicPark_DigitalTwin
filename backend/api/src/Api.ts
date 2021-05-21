@@ -66,6 +66,8 @@ export class Api {
         res.setHeader('Access-Control-Allow-Methods','GET, POST, HEAD, OPTIONS, PUT, DELETE, PATCH')
         res.setHeader('Access-Control-Allow-Headers','Content-Type')
         res.setHeader('Access-Control-Allow-Credentials','true')
+        //res.header("Access-Control-Allow-Origin", "*");
+        //res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
         res.setHeader('Access-Control-Allow-Origin', req.header('origin') || req.header('x-forwarded-host') || req.header('referer') || req.header('host'));
 
         let response = new RequestResponse()

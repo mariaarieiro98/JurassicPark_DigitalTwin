@@ -6,3 +6,4 @@ argparse
 scikit-learn
 pandas
 requests
+scipy

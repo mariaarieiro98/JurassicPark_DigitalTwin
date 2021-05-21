@@ -1,5 +1,5 @@
 import { ACTION_TYPES, Action } from "./actions"
-import { FunctionBlock, FBCategory , Functionality, DigitalTwin, SmartComponent, MonitoredVariable, MonitoredEvent, MonitoredVariableInstance, VariableToMonitor } from "../model"
+import { FunctionBlock, FBCategory , Functionality, DigitalTwin, SmartComponent, MonitoredVariable, MonitoredEvent, MonitoredVariableInstance } from "../model"
 import { Reducer } from "react"
 import { AssociatedSmartComponent } from "../model/model/AssociatedSmartComponent"
 
@@ -132,9 +132,6 @@ export const monitoredVariableReducer : Reducer<MonitoredVariable[], Action> = (
         case ACTION_TYPES.MONITORED_VARIABLE.UPDATE_MONITORED_VARIABLES:
             return action.payload
             
-        case ACTION_TYPES.MONITORED_VARIABLE.DELETE_MONITORED_VARIABLES:
-            return state.filter((monVar: MonitoredVariable) => monVar.idMonitoredVariable !== action.payload.idMonitoredVariable)
-
         case ACTION_TYPES.MONITORED_VARIABLE.ADD_MONITORED_VARIABLES:
             return [...state, action.payload]
 
@@ -178,21 +175,3 @@ export const monitoredVariableInstanceReducer : Reducer<MonitoredVariableInstanc
     }
 
 }
-
-export const variableToMonitorReducer : Reducer<VariableToMonitor[], Action> = (state: VariableToMonitor[], action: Action) :  VariableToMonitor[] => {
-
-    switch(action.type) {
-
-        case ACTION_TYPES.VARIABLE_TO_MONITOR.UPDATE_VARIABLES_TO_MONITOR:
-            return action.payload
-
-        case ACTION_TYPES.VARIABLE_TO_MONITOR.ADD_VARIABLES_TO_MONITOR:
-            return [...state, action.payload]
-
-        default:
-            throw new Error()
-
-    }
-
-}
-

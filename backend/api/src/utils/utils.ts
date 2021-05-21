@@ -272,6 +272,7 @@ export const getLinesOfFiles = (file:string) : Promise<string[]> => {
 					rej(err.toString())
 				}
 				else{
+					//console.log(data.toString())
 					res((data.toString() as string).split('\n').filter((s:string) => s !== ''))
 				}
 			})
@@ -332,5 +333,19 @@ export const getFileStats = (name: string) : Promise<{exists: boolean, stats?:fs
 
 	})
 
+}
+
+export function startCountdown(seconds) {
+	let counter = seconds;
+	  
+	const interval = setInterval(() => {
+	  console.log(counter);
+	  counter--;
+		
+	  if (counter < 0 ) {
+		clearInterval(interval);
+		console.log('Ding!');
+	  }
+	}, 1000);
 }
 

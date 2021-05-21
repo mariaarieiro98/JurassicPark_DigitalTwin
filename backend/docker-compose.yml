@@ -2,56 +2,56 @@ version: "3.5"
 services: 
 
   d_broker:
-    # network_mode: host
+    #network_mode: host
     image: eclipse-mosquitto:latest
     container_name: d_broker
     ports:
       - 1883:1883
       - 9001:9001
 
-  d_dinasore1:
-    # network_mode: host
-    build: ./dinasore-ua
-    container_name: d_dinasore1
-    # comnd:ma python core/main.py -a d_dinasore1 -p 61499 -u 4840 -l ERROR -m 5 20 -mha d_api -mhp 3000 -mfa d_ftp
-    command: tail -f /dev/null
-    # tty: true
-    ports:
-      - 61491:61499
-      - 4841:4840
-    volumes: 
-      - ./dinasore-ua/requirements.txt:/usr/src/dinasore-ua/requirements.txt
-      - ./dinasore-ua/communication:/usr/src/dinasore-ua/communication
-      - ./dinasore-ua/core:/usr/src/dinasore-ua/core
-      - ./dinasore-ua/opc_ua:/usr/src/dinasore-ua/opc_ua
-      - ./dinasore-ua/tests:/usr/src/dinasore-ua/tests
-      - ./dinasore-ua/resources_d1:/usr/src/dinasore-ua/resources
-      - ./dinasore-ua/data_model:/usr/src/dinasore-ua/data_model
-    environment: 
-      - MP_FTP_USER=jurassic
-      - MP_FTP_PASS=jurassic2020
+  # d_dinasore1:
+  #   #network_mode: host
+  #   build: ./dinasore-ua
+  #   container_name: d_dinasore1
+  #   # comnd: python core/main.py -a d_dinasore1 -p 61499 -u 4840 -l ERROR -m 5 20 -mha d_api -mhp 3000 -mfa d_ftp
+  #   command: tail -f /dev/null
+  #   # tty: true
+  #   ports:
+  #     - 61491:61499
+  #     - 4841:4840
+  #   volumes: 
+  #     - ./dinasore-ua/requirements.txt:/usr/src/dinasore-ua/requirements.txt
+  #     - ./dinasore-ua/communication:/usr/src/dinasore-ua/communication
+  #     - ./dinasore-ua/core:/usr/src/dinasore-ua/core
+  #     - ./dinasore-ua/opc_ua:/usr/src/dinasore-ua/opc_ua
+  #     - ./dinasore-ua/tests:/usr/src/dinasore-ua/tests
+  #     - ./dinasore-ua/resources_d1:/usr/src/dinasore-ua/resources
+  #     - ./dinasore-ua/data_model:/usr/src/dinasore-ua/data_model
+  #   environment: 
+  #     - MP_FTP_USER=jurassic
+  #     - MP_FTP_PASS=jurassic2020
 
-  d_dinasore2:
-    # network_mode: host
-    build: ./dinasore-ua
-    container_name: d_dinasore2
-    # command: python core/main.py -a d_dinasore2 -p 61499 -u 4840 -l ERROR -m 5 20 -mha d_api -mhp 3000 -mfa d_ftp
-    command: tail -f /dev/null
-    # tty: true
-    ports:
-      - 61492:61499
-      - 4842:4840
-    volumes: 
-      - ./dinasore-ua/requirements.txt:/usr/src/dinasore-ua/requirements.txt
-      - ./dinasore-ua/communication:/usr/src/dinasore-ua/communication
-      - ./dinasore-ua/core:/usr/src/dinasore-ua/core
-      - ./dinasore-ua/opc_ua:/usr/src/dinasore-ua/opc_ua
-      - ./dinasore-ua/tests:/usr/src/dinasore-ua/tests
-      - ./dinasore-ua/resources_d2:/usr/src/dinasore-ua/resources
-      - ./dinasore-ua/data_model:/usr/src/dinasore-ua/data_model
-    environment: 
-      - MP_FTP_USER=jurassic
-      - MP_FTP_PASS=jurassic2020
+  # d_dinasore2:
+  #   #network_mode: host
+  #   build: ./dinasore-ua
+  #   container_name: d_dinasore2
+  #   # command: python core/main.py -a d_dinasore2 -p 61499 -u 4840 -l ERROR -m 5 20 -mha d_api -mhp 3000 -mfa d_ftp
+  #   command: tail -f /dev/null
+  #   # tty: true
+  #   ports:
+  #     - 61492:61499
+  #     - 4842:4840
+  #   volumes: 
+  #     - ./dinasore-ua/requirements.txt:/usr/src/dinasore-ua/requirements.txt
+  #     - ./dinasore-ua/communication:/usr/src/dinasore-ua/communication
+  #     - ./dinasore-ua/core:/usr/src/dinasore-ua/core
+  #     - ./dinasore-ua/opc_ua:/usr/src/dinasore-ua/opc_ua
+  #     - ./dinasore-ua/tests:/usr/src/dinasore-ua/tests
+  #     - ./dinasore-ua/resources_d2:/usr/src/dinasore-ua/resources
+  #     - ./dinasore-ua/data_model:/usr/src/dinasore-ua/data_model
+  #   environment: 
+  #     - MP_FTP_USER=jurassic
+  #     - MP_FTP_PASS=jurassic2020
 
   # d_dinasore3:
   #   # network_mode: host
@@ -230,6 +230,7 @@ services:
   d_database:
     container_name: d_database
     build: ./database
+    #network_mode: host
     environment:
       - MYSQL_ROOT_PASSWORD=root-jurassic
     ports:
@@ -238,6 +239,7 @@ services:
   d_api:
     build: ./api
     container_name: d_api
+    #network_mode: host
     environment:
       - APP_PORT=3000
       - SOCKET_PORT=3500
@@ -269,9 +271,10 @@ services:
 
   d_ftp:
     image: panubo/vsftpd
+    #network_mode: host
     container_name: d_ftp
-    # ports:
-    #   - 21:21
+    #ports:
+     #- 21:21
     volumes:
       - ./api/public/function-blocks:/srv/jurassic
     environment: 

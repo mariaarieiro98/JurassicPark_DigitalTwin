@@ -12,37 +12,10 @@ import { useStore } from '../templates/Store/Store'
 
 interface FunctionalityFormProps {
 
-    // funcName: {
-    //   funcName: string
-    //   setFuncName: Function
-    // },
-    // digitalTwin: {
-    //   digitalTwin: DigitalTwin
-    //   setDigitalTwin: Function
-    // }
     cancel: {
         label: string
         action: () => void
     },
-    // confirmDialog: {
-    //     buttonTitle: string
-    //     title: string
-    //     initialState: ConfirmActionStateLabel
-    //     onSuccess : () => void
-    //     start? : {
-    //         label: string
-    //         positiveLabel: string
-    //         negativeLabel: string
-    //     }
-    //     success: {
-    //         label:string
-    //         positiveLabel: string
-    //     }
-    //     error: {
-    //         label: string
-    //         positiveLabel: string
-    //     }
-    // },
 }
 
 export const FunctionalityForm = (props: FunctionalityFormProps) => {

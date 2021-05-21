@@ -1,4 +1,4 @@
-import { FunctionBlock, FBCategory, DigitalTwin , Functionality, SmartComponent, MonitoredVariable, MonitoredEvent, MonitoredVariableInstance, VariableToMonitor} from "../model"
+import { FunctionBlock, FBCategory, DigitalTwin , Functionality, SmartComponent, MonitoredVariable, MonitoredEvent, MonitoredVariableInstance } from "../model"
 import { AssociatedSmartComponent } from "../model/model/AssociatedSmartComponent"
 
 export interface Action {
@@ -49,7 +49,6 @@ export const ACTION_TYPES = {
 
     MONITORED_VARIABLE: {
         UPDATE_MONITORED_VARIABLES: 'UPDATE_MONITORED_VARIABLES',
-        DELETE_MONITORED_VARIABLES: 'DELETE_MONITORED_VARIABLES',
         ADD_MONITORED_VARIABLES: 'ADD_MONITORED_VARIABLES',
     },
 
@@ -62,11 +61,6 @@ export const ACTION_TYPES = {
         UPDATE_MONITORED_VARIABLE_INSTANCES: 'UPDATE_MONITORED_VARIABLE_INSTANCES',
         ADD_MONITORED_VARIABLE_INSTANCES: 'ADD_MONITORED_VARIABLE_INSTANCES',
     },
-
-    VARIABLE_TO_MONITOR: {
-        UPDATE_VARIABLES_TO_MONITOR: 'UPDATE_VARIABLES_TO_MONITOR',
-        ADD_VARIABLES_TO_MONITOR: 'ADD_VARIABLES_TO_MONITOR',
-    }
 }
 
 export class FunctionBlockActions {
@@ -240,14 +234,6 @@ export class MonitoredVariableActions {
         }
     }
 
-    static deleteMonitoredVariable = (monitoredVariable: MonitoredVariable) : Action => ({
-
-        type: ACTION_TYPES.MONITORED_VARIABLE.DELETE_MONITORED_VARIABLES,
-        payload: monitoredVariable
-
-    })
-
-
     static addMonitoredVariable = (monitoredVariable: MonitoredVariable) : Action => {
         
         return {
@@ -293,26 +279,6 @@ export class MonitoredVariableInstanceActions {
         return {
             type: ACTION_TYPES.MONITORED_VARIABLE_INSTANCE.ADD_MONITORED_VARIABLE_INSTANCES,
             payload: monitoredVariableInstance
-        }
-    }
-
-}
-
-export class VariableToMonitorActions {
-
-    static updateVariableToMonitor = (monitoredVariable: VariableToMonitor[]) : Action => {
-        
-        return {
-            type: ACTION_TYPES.VARIABLE_TO_MONITOR.UPDATE_VARIABLES_TO_MONITOR,
-            payload: monitoredVariable
-        }
-    }
-
-    static addVariableToMonitor = (monitoredVariable: VariableToMonitor) : Action => {
-        
-        return {
-            type: ACTION_TYPES.VARIABLE_TO_MONITOR.ADD_VARIABLES_TO_MONITOR,
-            payload: monitoredVariable
         }
     }
 
