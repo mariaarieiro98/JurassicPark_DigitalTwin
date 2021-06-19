@@ -14,7 +14,6 @@ export interface Functionality {
     funcName: string
     dt?: DigitalTwin
     funcdtName?: string
-    //state:number
     funcUser?: User
     funcUserId: number
     funcdtId: number

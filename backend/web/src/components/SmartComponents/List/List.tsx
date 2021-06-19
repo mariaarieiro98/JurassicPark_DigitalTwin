@@ -54,6 +54,7 @@ export const SmartComponentList = () : React.ReactElement => {
     }
 
     const onInitialData = (data:any) => {
+        //console.log("data.result:", data.result)
         updateSmartObjects(data.result)
         setFetching(false)
     } 

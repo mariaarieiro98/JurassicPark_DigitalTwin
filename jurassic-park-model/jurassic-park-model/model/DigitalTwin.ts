@@ -16,13 +16,8 @@ export interface Functionality {
     dt?: DigitalTwin
     funcdtName?: string
     funcdtId: number
-    //state:number
     funcUser?: User
     funcUserId: number
     funcscId: number 
     funcscName: string
-    /* funcMonitoredInputEvents: Event[]
-    funcMonitoredOutputEvents: Event[]
-    funcMonitoredInputVariables: Variable[]
-    funcMonitoredOutputVariables: Variable[] */
 } 

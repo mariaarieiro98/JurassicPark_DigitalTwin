@@ -23,7 +23,7 @@ export class SmartComponentController implements SocketEngineInterface,OpcuaClie
         } 
     }
 
-    private constructor(address: string, port: number, id: number, name?:string, type?:string) {
+    private constructor(address: string, port: number, id: number, name?:string, type?:string, diac4Port?: number) {
         this.opcuaController = new OpcUaClient(address,port)
         this.opcuaController.registerObserver(this)
         this.namespace = `${SmartComponentController.BASE_NAME_SPACE}/${id}`
@@ -33,6 +33,7 @@ export class SmartComponentController implements SocketEngineInterface,OpcuaClie
             scName: name ?? '',
             scType: type ?? '',
             scId: id,
+            diac4Port: diac4Port,
         }
     }
 
@@ -40,7 +41,7 @@ export class SmartComponentController implements SocketEngineInterface,OpcuaClie
 
         return new Promise((res:Function, rej:Function) => {
 
-            const smartComponentController : SmartComponentController = new SmartComponentController(address,port,id,name,type)            
+            const smartComponentController : SmartComponentController = new SmartComponentController(address,port,id,name,type)     
             smartComponentController.opcuaController.connect(smartComponentController.setConnected, smartComponentController.setDisconnected)
 
                 .then(async (result: string) => {
@@ -110,6 +111,8 @@ export class SmartComponentController implements SocketEngineInterface,OpcuaClie
             this.data.scType = type
             this.data.scName = name
             this.data.scState = 'connected'
+            const diac4Port = await this.opcuaController.readMainValue(OPCUA_MONITORING_ITEM.diac4Port)
+            this.data.diac4Port = diac4Port
             this.notifyClientScUpdated()
 
         }
@@ -122,6 +125,7 @@ export class SmartComponentController implements SocketEngineInterface,OpcuaClie
     }
     
     notifyClientScUpdated = () => {
+       
         socketEngine.sendMessageToClient([SmartComponentController.BASE_NAME_SPACE, this.namespace],SmartComponentController.EDITED_SC_EVENT,{sc:this.data})
     }
     
@@ -219,7 +223,12 @@ export class SmartComponentController implements SocketEngineInterface,OpcuaClie
 
     public readMVandNotify() {
 
-        this.readMonitoredVariablesAndNotifyClient()
+        this.reconnectToOpcUa()
+    }
+
+    public killSubsctiptions() {
+
+        this.opcuaController.opcUaClient.disconnect()
     }
 
     //Lê a informação relativa à variável VALUE
@@ -229,8 +238,7 @@ export class SmartComponentController implements SocketEngineInterface,OpcuaClie
         
             const monitoredVariables : {idMonitoredVariable: number, monitoredVariableName:string,scAssociated:string, fbAssociated:string}[] = (await digitalTwinMainController.getMonitoredVariable(new RequestResponse())).getResult().map((monVar:MonitoredVariable) => ({idMonitoredVariable: monVar.idMonitoredVariable, monitoredVariableName: monVar.monitoredVariableName, scAssociated:monVar.scAssociated, fbAssociated:monVar.fbAssociated}))
             
-            let dinasore = this.namespace.slice(this.namespace.length-1,this.namespace.length)
-            dinasore="dinasore"+dinasore
+            let dinasore=this.opcuaController.device
         
             let i=0
             let monitoredVariablesName = []
@@ -273,7 +281,7 @@ export class SmartComponentController implements SocketEngineInterface,OpcuaClie
 
             }
 
-            const monitoredVariableValues = await this.opcuaController.getAllMonitoredVariableInstances(afterFilterMonName, afterFilterMonFB)
+            const monitoredVariableValues = await this.opcuaController.getAllMonitoredVariableInstances(afterFilterMonName, afterFilterMonFB, dinasore)
             const promisesMVI = []
            
             monitoredVariableValues.forEach((element:{id:string, monitoredVariableName: string, currentValue: number}) => {
@@ -285,7 +293,6 @@ export class SmartComponentController implements SocketEngineInterface,OpcuaClie
             this.data.monitoredVariableInstances = monitoredVariableValues.map((element:{id:string, monitoredVariableName: string, currentValue: number, sc: string}, index:number) => {
                 
                 const monVar : MonitoredVariableInstance = mvis[index].result[0] ?? undefined
-                
                 return {
                     id: element.id, 
                     currentValue: element.currentValue,

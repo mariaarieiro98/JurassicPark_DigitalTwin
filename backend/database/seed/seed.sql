@@ -28,12 +28,13 @@ CREATE TABLE SmartComponent(
     scMemory VARCHAR(50),
     scCpu VARCHAR(50),
     scType VARCHAR(50),
+    diac4Port INT NOT NULL, 
 
     UNIQUE KEY(scAddress,scPort)
 
 );
 
-CREATE TABLE FBCategory(
+CREATE TABLE FBCategory(monitoredEventName
 
     fbcId INT PRIMARY KEY AUTO_INCREMENT,
     fbcName VARCHAR(50) NOT NULL UNIQUE,
@@ -68,7 +69,9 @@ CREATE TABLE AssociatedSmartComponent(
 
     idAssociatedSmartComponent INT PRIMARY KEY AUTO_INCREMENT,
     scDtId INT NOT NULL,
-    scName VARCHAR(50) NOT NULL UNIQUE,
+    scName VARCHAR(50) NOT NULL,
+    scAddress VARCHAR(50) NOT NULL,
+    scPort INT NOT NULL,
     associatedScUserId INT,
 
     FOREIGN KEY(scDtId) references DigitalTwin(dtId) ON UPDATE CASCADE

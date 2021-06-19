@@ -14,10 +14,9 @@ import { TextField, Grid, Button, Box, Dialog, DialogTitle, CircularProgress , S
 import { createFunctionality, createMonitoredEvent, createMonitoredVariable, deleteMonitoredEvent, deleteMonitoredVariable, updateFunctionality } from '../../services/api/digital-twin'
 import { deleteFunctionality} from '../../services/api/digital-twin'
 import { useDialogStyles } from '../FunctionBlockCategories/List/style'
-import { CheckCircle, Error } from '@material-ui/icons'
 import { useFunctionBlockStyles } from '../FunctionBlocks/FunctionBlock/style'
 import { Redirect } from 'react-router-dom'
-import { Socket } from 'socket.io-client'
+import { CheckCircle, Error } from '@material-ui/icons'
 
 const NEW_FUNCTIONALITY_RE = /[a-zA-Z0-9]{3,}/
 const FUNCTION_BLOCK_RE = /[a-zA-Z0-9]{3,}/
@@ -29,28 +28,24 @@ let idMonitoredVariable = -1
 let idMonitoredEvent = -1
 const funcUserId = 1
 
-interface MonitoredEventsWithNumber extends MonitoredEvent {
-    currentNumber: {
-        key: string | undefined
-        data: number
-    }
-}
-
 const EditFunctionalityDialog = (props: {func: Functionality, onGood: (newFunc: Functionality) => void, onError: () => void, onCancel: () => void}) => {
 
   const [newFuncName, setNewFuncName] : [string,Function] = useState(props.func.funcName)
-
-  const classes = useDialogStyles()
 
   const [sending, setSending] : [boolean, Function] = useState(false)
 
   const [result, setResult] : [{done: boolean, good?: boolean, message?: string},Function] = useState({done:false})
 
+  const classes = useDialogStyles()
+  
   const action = () => {
 
-      if(props.func.funcId) {
+    if(props.func.funcId) {
 
-          if(!result.done) {
+        if(!result.done) {
+
+    
+              props.func.funcName = newFuncName
 
               setSending(true)
   
@@ -76,50 +71,50 @@ const EditFunctionalityDialog = (props: {func: Functionality, onGood: (newFunc: 
               else
                   props.onError()
 
-          }
+         }
 
-      }
-
+        }
   }
 
   return (
-      <Dialog open={true}>
-          <DialogTitle>Edit Functionality</DialogTitle>
-          <Box className={classes.box}>
-              {
-                  !result.done 
-                      ?
-                          <TextField 
-                              disabled={sending}
-                              value={newFuncName}
-                              onChange={(event) => setNewFuncName(event.target.value)}
-                          />
-                      :    <Grid container justify="center">
-                              <Grid item>
-                                  {
-                                      result.good 
-                                          ?   <CheckCircle color="primary" />
-                                          :   <Error color="error" />
-                                  }
-                              </Grid>
-                              <Grid item>
-                                  <Box className={result.good ? classes.good : classes.error} textAlign="center">{result.message}</Box>
-                              </Grid>
-                          </Grid> 
-              }
-          </Box>
-          <Grid className={classes.buttons} container direction="row" justify="space-between">
-              <Grid item>
-                  {sending 
-                      ? <CircularProgress color="primary" />
-                      : <Button onClick={action}>Ok</Button>
-                  }
-              </Grid>
-              <Grid item>
-                  <Button disabled={sending} onClick={props.onCancel}>Cancel</Button>
-              </Grid>
-          </Grid>
-      </Dialog>
+       
+            <Dialog open={true}>
+            <DialogTitle>Edit Functionality</DialogTitle>
+            <Box className={classes.box}>
+                {
+                    !result.done 
+                        ?
+                            <TextField 
+                                disabled={sending}
+                                value={newFuncName}
+                                onChange={(event) => setNewFuncName(event.target.value)}
+                            />
+                        :    <Grid container justify="center">
+                                <Grid item>
+                                    {
+                                        result.good 
+                                            ?   <CheckCircle color="primary" />
+                                            :   <Error color="error" />
+                                    }
+                                </Grid>
+                                <Grid item>
+                                    <Box className={result.good ? classes.good : classes.error} textAlign="center">{result.message}</Box>
+                                </Grid>
+                            </Grid> 
+                }
+            </Box>
+            <Grid className={classes.buttons} container direction="row" justify="space-between">
+                <Grid item>
+                    {sending 
+                        ? <CircularProgress color="primary" />
+                        : <Button onClick={action}>Ok</Button>
+                    }
+                </Grid>
+                <Grid item>
+                    <Button disabled={sending} onClick={props.onCancel}>Cancel</Button>
+                </Grid>
+            </Grid>
+        </Dialog>
   )
 
 }
@@ -214,7 +209,6 @@ const AddFunctionalityDetails = (props: {func: Functionality, onGood: (newFunc: 
         const monitoredVariable: MonitoredVariable = buildMonitoredVariable(funcId)
         const monitoredEvent: MonitoredEvent = buildMonitoredEvent(funcId)
 
-        console.log(monitoredVariable)
         if(props.func.funcId) {
             
             if(!result.done) {
@@ -230,7 +224,7 @@ const AddFunctionalityDetails = (props: {func: Functionality, onGood: (newFunc: 
                         setResult({done: true, good: false, message: error.msg})
                     })
   
-                if(newVariable!=''){
+                if(newVariable!==''){
 
                     createMonitoredVariable(monitoredVariable)
                         .then((response: RequestResponseState) => {
@@ -242,7 +236,7 @@ const AddFunctionalityDetails = (props: {func: Functionality, onGood: (newFunc: 
                 }
                 
 
-                if(newEvent!=''){
+                if(newEvent!==''){
 
                     createMonitoredEvent(monitoredEvent)
                         .then((response: RequestResponseState) => {
@@ -266,6 +260,7 @@ const AddFunctionalityDetails = (props: {func: Functionality, onGood: (newFunc: 
                     props.onError()
             }
         }
+
         props.onCancel()
         document.location.reload(true)
     }
@@ -281,7 +276,7 @@ const AddFunctionalityDetails = (props: {func: Functionality, onGood: (newFunc: 
                         <Grid item xs={12} sm={6}>
                             <InputLabel id={`smart-component-label-${availableSmartComponents}`}>DINASORE</InputLabel>
                             <Select labelId={`smart-component-label-${availableSmartComponents}`} value={smartComponentChoice} onChange={handleSmartComponentChoice}>
-                            {(availableSmartComponents || []).map((sc: any) => {return <MenuItem key={sc.scId} value={sc.scName}>{sc.scName}</MenuItem>})}
+                            {(availableSmartComponents || []).map((sc: any) => {return <MenuItem key={sc.scId} value={sc.scName}>{`${sc.scAddress}, ${sc.scName}, ${sc.scPort}`}</MenuItem>})}
                             </Select> 
                         </Grid>
                         <Grid item xs={12} sm={6}>
@@ -375,8 +370,6 @@ export const DigitalTwinMonitoring = () => {
   const {data:monitoredVariables, dispatchAction:dispatchMonitoredVariableActions} = useStore('monitoredVariables')
   const {data:monitoredEvents, dispatchAction:dispatchMonitoredEventActions} = useStore('monitoredEvents')
 
-  const [numberOfMonitoredEvents,setNumberOfMonitoredEvents] : [MonitoredEventsWithNumber[],Function] = useState([])
-
   const onCancel = () => setError('')
 
   const updateFunctionalities = (funcs: Functionality[]) => dispatchFunctionalityActions(FunctionalityActions.updateFunctionalities(funcs))
@@ -427,7 +420,7 @@ export const DigitalTwinMonitoring = () => {
   const validFunc = isFunctionalityValid(newFunc)
 
     if(!validFunc)
-      setValidNewFunc(false)
+        setValidNewFunc(false)
     else{
         setConfirmAddFunc(true)
     }
@@ -437,7 +430,7 @@ export const DigitalTwinMonitoring = () => {
 
   const buildFunctionality = () : Functionality => ({
     funcName: newFunc, funcId: functionalityId,
-    funcdtId: digitalTwinIdChoice , funcUserId, funcdtName: digitalTwinChoice,
+    funcdtId: digitalTwinIdChoice , funcUserId, funcdtName: digitalTwinChoice
   })
 
   const addNewFunctionalityAction = () : Promise<string> => {
@@ -534,16 +527,16 @@ export const DigitalTwinMonitoring = () => {
 
     return new Promise(async(res:Function,rej:Function) => {
 
-        //let monitoredVariablesToDelete = []
+        let monitoredVariablesToDelete = []
         let monitoredEventsToDelete = []
         let i = 0
         
-        // while(i < monitoredVariables.length) {
-        //     if(monitoredVariables[i].funcIdAssociated === func.funcId){
-        //         monitoredVariablesToDelete.push(monitoredVariables[i])
-        //     } 
-        //     i++
-        // }   
+        while(i < monitoredVariables.length) {
+            if(monitoredVariables[i].funcIdAssociated === func.funcId){
+                monitoredVariablesToDelete.push(monitoredVariables[i])
+            } 
+            i++
+        }   
 
         i=0
 
@@ -554,9 +547,6 @@ export const DigitalTwinMonitoring = () => {
             i++
         }  
 
-        //console.log(monitoredVariablesToDelete)
-        console.log(monitoredEventsToDelete)
-
         if(!func.funcId) {
             rej('Error')
             return
@@ -566,17 +556,17 @@ export const DigitalTwinMonitoring = () => {
 
             const response : RequestResponseState = await deleteFunctionality(func.funcId)
             
-            // i=0
-            // while(i < monitoredVariablesToDelete.length){
-            //     console.log("entrei aqui")
-            //     const response1 : RequestResponseState = await deleteMonitoredVariable(monitoredVariablesToDelete[i].idMonitoredVariable)
-            //     res(response1)
-            //     i++
-            // }
+            i=0
+            while(i < monitoredVariablesToDelete.length){
+                const response1 : RequestResponseState = await deleteMonitoredVariable(monitoredVariablesToDelete[i].idMonitoredVariable)
+                res(response1)
+                i++
+            }
 
             i=0 
             while(i < monitoredEventsToDelete.length){
                 const response1 : RequestResponseState = await deleteMonitoredEvent(monitoredEventsToDelete[i].idMonitoredEvent)
+                res(response1)
                 i++
             }
 
@@ -632,9 +622,6 @@ export const DigitalTwinMonitoring = () => {
   const redirectToList = (func : Functionality) => {
       setRedirectTo(func.funcId)
   }
-  const indexes_test = [
-    {label: 'delete', key: 'delete'},
-  ]
   
   if(redirectTo !== -1) 
   return  <Redirect to={`/functionality-details/${redirectTo}`} push={true}/>
@@ -729,32 +716,6 @@ export const DigitalTwinMonitoring = () => {
                                     onClick={validateAndCreate}
                                     >
                                     Add Functionality
-                                    </Button>
-                                </Grid>
-                            </Grid>
-                        </Grid>
-                    </Grid>
-                </Grid>
-                <Grid item xs>
-                    Insert variable sampling time
-                </Grid>
-                <Grid item> 
-                    <Grid container item xs>
-                        <Grid className={classes.box} spacing={1} item container direction="row">
-                            <Grid item xs={4}>
-                                <InputLabel id={`digital-twin-label-${newFunc}`}>Sampling Time</InputLabel>
-                                <Select labelId={`digital-twin-label-${newFunc}`} value={digitalTwinChoice} onChange={handleDigitalTwinChoice}>
-                                {(digitalTwins || []).map((digitalTwin: any) => {return <MenuItem key={digitalTwin.dtId} value={digitalTwin.dtName}>{digitalTwin.dtName}</MenuItem>})}
-                                </Select>
-                            </Grid>
-                            <Grid container justify="flex-end" spacing={1}>
-                                <Grid item>
-                                    <Button
-                                    color="primary"
-                                    variant="contained"
-                                    onClick={validateAndCreate}
-                                    >
-                                    Add Sampling Time
                                     </Button>
                                 </Grid>
                             </Grid>

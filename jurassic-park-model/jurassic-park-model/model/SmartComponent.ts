@@ -40,7 +40,8 @@ export interface SmartComponent {
     memShared?: number
     memTotal?: number
     memUsed?: number
-
+    diac4Port?: number
+    
     fbInstances?: FbInstance []
     monitoredVariableInstances?: MonitoredVariableInstance []
     monitoredEventInstances?: MonitoredEventInstance []

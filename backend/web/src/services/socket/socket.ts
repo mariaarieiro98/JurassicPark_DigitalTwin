@@ -7,7 +7,8 @@ export enum SOCKET_EVENT {
     INITIAL_DATA = 'initial-data',
     EDITED_MVI_EVENT = 'smart-component-mvi-updated',
     UPDATE_BACKEND = 'update-backend',
-    TRIGGER_EVENT = 'trigger-event'
+    TRIGGER_EVENT = 'trigger-event',
+    OPCUA_DISCONNECT = 'opcUa-disconnect'
 }
 
 export class SocketConnection {
@@ -66,6 +67,7 @@ export class SocketConnection {
         })
 
         this.socket.on(SOCKET_EVENT.INITIAL_DATA, (data:any) => {
+            //console.log("data:", data)
             if(onInitialData) onInitialData(data)
         })
 
@@ -90,9 +92,8 @@ export class SocketConnection {
     }
 
     public emit(event: SOCKET_EVENT, data: any) {
-        //console.log(event)
         this.socket?.emit(event, data , (data: any) => {
-            //console.log(data); 
+         
         })
     }
 } 

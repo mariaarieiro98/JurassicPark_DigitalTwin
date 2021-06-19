@@ -61,16 +61,20 @@ export class SocketEngine {
             
             if(socketInterface.initializer?.action)
             socketInterface.initializer.action()
-            
+
             socket.emit('initial-data', socketInterface.initializer?.data())
-                    
-            socket.on("update-backend", (data) => {
-                smartComponentMainController.readAllFunctions()
-                
+
+            socket.on('update-backend', (data) => {
+                smartComponentMainController.readAllFunctions()    
+            })
+            
+            socket.on('opcUa-disconnect', (data) => {
+                console.log("entrei aqui disconnect")
+                smartComponentMainController.killAllSubsctiptions()
             })
 
             socket.on('trigger-event', (data) => {
-                makeTriggerCommandAndExecute(data)
+                makeTriggerCommandAndExecute(data, socketInterface.initializer?.data())
                               
             })
 
@@ -108,45 +112,75 @@ export class SocketEngine {
         delete this.connection.nsps['/' + namespace]
 
     }
+
     }
 
-    function makeTriggerCommandAndExecute(data: MonitoredEvent) {
+    function makeTriggerCommandAndExecute(data: MonitoredEvent, initialData:any) {
 
-        var fs = require('fs'), path = require('path');
+        const smartComponent: {name: string, address: string, port: number}[] = []
 
-        let key_eventName =  data.monitoredEventName
-        let key_eventFb = data.fbAssociated
-        let key_deviceName = data.scAssociated
+        let i = 0
     
-        if(flagFirstTime){
-            flagFirstTime=false
-            process.chdir('./4diac-lib')
+        while(initialData.result[i] !== undefined){
+            const name = initialData.result[i].scName
+            const address = initialData.result[i].scAddress
+            const port = initialData.result[i].diac4Port
+            smartComponent.push({name,address,port})
+            i++;
+        }
+
+       let k = 0
+       let j = 0
+
+        while(k<smartComponent.length){
+           if(smartComponent[j].name === data.scAssociated)
+           {    
+              break;
+           }
+           j++
+           k++
+        }
+
+        if((j<smartComponent.length) && (k<smartComponent.length)){
+            let key_eventPort = smartComponent[j].port
+            let key_eventAddress = smartComponent[j].address
+            let key_eventName =  data.monitoredEventName
+            let key_eventFb = data.fbAssociated
+            let key_deviceName = data.scAssociated
+    
+            if(flagFirstTime){
+                flagFirstTime=false
+                process.chdir('./4diac-lib')
+            }
+            
+            let ipArray = [key_eventFb + "." + key_eventName]
+            let server = key_deviceName + "@" + key_eventAddress + ":" + key_eventPort
+            let jsonData = {[server]:ipArray} 
+            
+            let jsonString = JSON.stringify(jsonData,null,2)
+    
+            var fs = require('fs'), path = require('path');
+         
+            //Função que escreve no ficheiro ./events_sub_serv.json a jsonString atualizada
+            fs.writeFile('./events_sub_serv.json', jsonString, function(err){
+                if(err) return console.log(err);
+                console.log('File edited');
+            });
+            
+            //Comando para dar trigger no evento 
+            const { exec } = require("child_process");
+    
+            exec("python3 trigger_fb.py events_sub_serv.json", (error, stdout, stderr) => {
+                if (error) {
+                    console.log(`Error: ${error.message}`);
+                    return;
+                }
+                if (stderr) {
+                    console.log(`Error in the command`);
+                    return;
+                }
+                console.log(`Successful trigger ${stdout}`);
+            });
         }
         
-        let ipArray = [key_eventFb + "." + key_eventName]
-        let server = key_deviceName + "@192.168.1.83:61493"
-        let jsonData = {[server]:ipArray} 
-        
-        let jsonString = JSON.stringify(jsonData,null,2)
-
-        //Função que escreve no ficheiro ./events_sub_serv.json a jsonString atualizada
-        fs.writeFile('./events_sub_serv.json', jsonString, function(err){
-            if(err) return console.log(err);
-            console.log('File edited');
-        });
-
-        //Comando para dar trigger no evento 
-        const { exec } = require("child_process");
-
-        exec("python3 trigger_fb.py events_sub_serv.json", (error, stdout, stderr) => {
-            if (error) {
-                console.log(`Error: ${error.message}`);
-                return;
-            }
-            if (stderr) {
-                console.log(`Error in the command`);
-                return;
-            }
-            console.log(`Successful trigger ${stdout}`);
-        });
     }

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { useFunctionBlockStyles } from "../FunctionBlocks/FunctionBlock/style"
-import { Variable, DataType, InOutType, SmartComponent, AssociatedSmartComponent } from "../../model/index"
+import { SmartComponent } from "../../model/index"
 import { Grid, FormControl, InputLabel, Select, Button, MenuItem } from "@material-ui/core"
 import { useMountEffect } from '../../utils/main'
 import { getOrDownloadSmartComponents } from '../../utils/smartComponents'
@@ -33,7 +33,7 @@ export const SmartComponentList = React.memo((props: SmartComponentProps) => {
   const setSmartComponent = useCallback((smartComponent: SmartComponent , index:number) => {
 
     setSmartComponents((prevScs: SmartComponent[]) => {
-
+      console.log("entrei aqui")
       const oldSmartComponent : SmartComponent = prevScs[index]
       const newSmartComponents : SmartComponent[] = [...prevScs]
       newSmartComponents[index] = smartComponent
@@ -44,17 +44,23 @@ export const SmartComponentList = React.memo((props: SmartComponentProps) => {
   },[setSmartComponents])
 
   const addSmartComponent = useCallback((scToAdd: SmartComponent) => {
-    
+    console.log("entrei aqui 1")
+
     setSmartComponents((prevSmartComponents: SmartComponent[]) =>[...prevSmartComponents, scToAdd])
     setNewSmartComponent(newSc)
 
   }, [setSmartComponents,newSc]) 
 
   const removeSmartComponent = useCallback((smartComponentToRemove:SmartComponent) => {
+    console.log("entrei aqui 2")
     setSmartComponents((prevSmartComponents: SmartComponent[]) => prevSmartComponents.filter((smartComponent:SmartComponent,index:number) => smartComponent !== smartComponentToRemove))
+    console.log(smartComponentToRemove)
     onSmartComponentRemoval(smartComponentToRemove)
   },[onSmartComponentRemoval,setSmartComponents]) 
-
+  
+  console.log("newSc", newSmartComponent)
+  console.log("smartComponents:", smartComponents)
+ 
   return (
     <Grid container direction="column">
       <Grid item>{props.title}</Grid>
@@ -97,6 +103,8 @@ const SmartComponentRow = React.memo((props: SmartComponentRowProps) => {
       props.addRemoveSmartComponent(props.smartComponent)
     
   }
+  
+  //Verifica se o nome é válido
   const validate = useCallback(() => {
     
     !isValid() ? setValidName("Mandatory") : setValidName('')
@@ -105,16 +113,16 @@ const SmartComponentRow = React.memo((props: SmartComponentRowProps) => {
 
   useEffect(() => {if(!props.newSc) validate()}, [props.smartComponent.scName, props.newSc, validate])
 
-  const updateField = (field:string) => (event:any) => {
-
-    props.setSmartComponent({...props.smartComponent, [field]: event.target.value},props.index)
+  const updateField = (fieldScId:string, fieldScName:string, fieldScAddress:string, fieldScPort:string) => (event:any) => {
+  
+    props.setSmartComponent({...props.smartComponent, [fieldScId]: event.target.value, [fieldScName]: event.target.value.scName, [fieldScAddress]: event.target.value.scAddress, [fieldScPort]: event.target.value.scPort}, props.index)
   
   }
 
-    // Recuperar diretamente da comunicação OPC-UA os smart_components disponíveis (SmartComponent)
-    useMountEffect(() => {
+  // Recuperar diretamente da comunicação OPC-UA os smart_components disponíveis (SmartComponent)
+  useMountEffect(() => {
 
-      setTimeout(() => {
+    setTimeout(() => {
   
       setFetching(true)
       getOrDownloadSmartComponents(smartComponents)
@@ -122,27 +130,26 @@ const SmartComponentRow = React.memo((props: SmartComponentRowProps) => {
           .catch((e:RequestResponseState) => setError(e.msg))
           .finally(() => setFetching(false))
       }, 0)
-      })
-  
+  })
 
   return (
-    <Grid item container direction="row" justify="space-between" alignItems="center">
+    <Grid item xs={12} container direction="row" justify="space-between" alignItems="center">
       { props.order ?
-      <Grid item xs={1}>
+      <Grid item xs={12}>
           {props.order}
       </Grid>
       : null
       }
-      <Grid item xs={3}>
+      <Grid item xs={6}>
         <FormControl fullWidth required>
           <InputLabel id={`smart-component-label-${props.smartComponent.scName}`}></InputLabel>
-          <Select
-            labelId={`smart-component-label-${props.smartComponent.scName}`}
-            value={props.smartComponent.scName}
-            onChange={updateField('scName')}
-          >
-            {(smartComponents || []).map((smartComponent: any) => {return <MenuItem key={smartComponent.scId} value={smartComponent.scName}>{smartComponent.scName}</MenuItem>})}
-          </Select>
+            <Select
+              labelId={`smart-component-label-${props.smartComponent.scName}`}
+              value={props.smartComponent.scId}
+              onChange={updateField('scId', 'scName','scAddress','scPort')}
+            >
+              {(smartComponents || []).map((smartComponent: any) => {return <MenuItem key={smartComponent} value={smartComponent}>{`${smartComponent.scAddress}, ${smartComponent.scName}, ${smartComponent.scPort}`}</MenuItem>})}
+            </Select>
         </FormControl>
       </Grid>
       <Grid item xs={1}>

@@ -10,12 +10,12 @@ export class DigitalTwinMainController {
 
     private processRawFunctionalities = (raw: any[]) : Functionality[] => {
 
-        const grouped = groupBy(raw,'funcId',['funcUserId','funcdtId','dtName','funcName']) as any
+        const grouped = groupBy(raw,'funcId',['funcUserId','funcdtId','dtName','funcName', 'funcSamplingTime']) as any
 
         return grouped.map((func:any) => ({
 
-            funcId: parseInt(func.funcId), funcName:func.funcName, funcdtId:func.funcdtId, dtName:func.dtName,
-            funcUserId:func.funcUserId, 
+            funcId: parseInt(func.funcId), funcName:func.funcName, funcdtId:func.funcdtId, funcSamplingTime: func.funcSamplingTime,
+            dtName:func.dtName, funcUserId:func.funcUserId, 
         }))
 
     }
@@ -75,8 +75,8 @@ export class DigitalTwinMainController {
 
             try {
                 const stmtAssociatedSmartComponent: Statement = {
-                    sql:  'Insert INTO AssociatedSmartComponent(scName,associatedScUserId,scDtId) VALUES(?,?,?)',
-                    params: [associatedSmartComponent.scName, associatedSmartComponent.associatedScUserId, associatedSmartComponent.scDtId],
+                    sql:  'Insert INTO AssociatedSmartComponent(scName,associatedScUserId,scDtId, scAddress, scPort) VALUES(?,?,?,?,?)',
+                    params: [associatedSmartComponent.scName, associatedSmartComponent.associatedScUserId, associatedSmartComponent.scDtId, associatedSmartComponent.scAddress, associatedSmartComponent.scPort],
                     type: Operation.insert,
                     insertTable: Tables.associatedSmartComponent
                 }
@@ -218,13 +218,13 @@ export class DigitalTwinMainController {
                     return
                 }
 
-                if(oldFunctionality.funcName === functionality.funcName) {
+                if((oldFunctionality.funcName === functionality.funcName)) {
                     res(response)
                     return
                 }
                
                 const updateFunctionalityStmt : string = 'UPDATE Functionality SET funcName = ? WHERE funcId = ?'
-                await DatabaseUtils.executeStatement(updateFunctionalityStmt, [functionality.funcName,id])            
+                await DatabaseUtils.executeStatement(updateFunctionalityStmt, [functionality.funcName, id])            
                 res(response)
 
             }

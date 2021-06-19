@@ -35,5 +35,5 @@ class SENSOR_SIMULATOR:
             if self.distribution_index >= len(self.distribution):
                 self.distribution_index = 0
             # wait some time
-            time.sleep(1)
-            return [None, event_value, value]
+            time.sleep(10)
+            return [None, event_value, self.distribution_index]

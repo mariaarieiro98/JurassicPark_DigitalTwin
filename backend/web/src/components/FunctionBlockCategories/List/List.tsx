@@ -14,7 +14,6 @@ import { createFunctionBlockCategory, updateFunctionBlockCategory } from '../../
 import { deleteFunctionBlockCategory} from '../../../services/api/function-block'
 import { useDialogStyles } from './style'
 import { CheckCircle, Error } from '@material-ui/icons'
-import { functionBlockCategoryReducer } from '../../../redux/reducers'
 
 const NEW_CATEGORY_RE = /[a-zA-Z0-9]{3,}/
 

@@ -57,6 +57,7 @@ class SmartComponentMainController {
             try {
                 let scController;
                 let existingSCS = this.getSmartObjects(new request_1.RequestResponse(), [{ key: 'scAddress', value: address }, { key: 'scPort', value: port }]);
+                //console.log("existingSCS:", existingSCS)
                 if (existingSCS.getResult().length) {
                     scController = existingSCS.getResult()[0];
                     yield scController.reconnectToOpcUa();
@@ -64,8 +65,10 @@ class SmartComponentMainController {
                     res(response);
                 }
                 else {
-                    let id = name.match(/\d+/g).map(Number);
-                    scController = yield SmartComponentController_1.SmartComponentController.buildSmartComponentController(address, port, id[0], name, type);
+                    //let id = name.match(/\d+/g).map(Number)
+                    let id = SmartComponentMainController.id++;
+                    //console.log("adress, name, type, port:", address, name, type, port)
+                    scController = yield SmartComponentController_1.SmartComponentController.buildSmartComponentController(address, port, id, name, type);
                     this.smartComponentIndividualControllers.push(scController);
                     response.setResult('Smart Object Registered');
                     res(response);
@@ -81,11 +84,20 @@ class SmartComponentMainController {
             }
         }));
     }
-    readAllFunctions() {
+    killAllSubsctiptions() {
         let existingSCS = this.getSmartObjects(new request_1.RequestResponse());
         let smartComponentController = existingSCS.getResult();
         for (const scc of smartComponentController) {
-            scc.readMVandNotify();
+            scc.killSubsctiptions();
+        }
+    }
+    readAllFunctions() {
+        let existingSCS = this.getSmartObjects(new request_1.RequestResponse());
+        const smartComponentController = existingSCS.getResult();
+        for (const scc of smartComponentController) {
+            if ((scc.data.scState === 'connected')) {
+                scc.readMVandNotify();
+            }
         }
     }
 }

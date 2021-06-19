@@ -16,10 +16,10 @@ const utils_1 = require("../../utils/utils");
 class DigitalTwinMainController {
     constructor() {
         this.processRawFunctionalities = (raw) => {
-            const grouped = utils_1.groupBy(raw, 'funcId', ['funcUserId', 'funcdtId', 'dtName', 'funcName']);
+            const grouped = utils_1.groupBy(raw, 'funcId', ['funcUserId', 'funcdtId', 'dtName', 'funcName', 'funcSamplingTime']);
             return grouped.map((func) => ({
-                funcId: parseInt(func.funcId), funcName: func.funcName, funcdtId: func.funcdtId, dtName: func.dtName,
-                funcUserId: func.funcUserId,
+                funcId: parseInt(func.funcId), funcName: func.funcName, funcdtId: func.funcdtId, funcSamplingTime: func.funcSamplingTime,
+                dtName: func.dtName, funcUserId: func.funcUserId,
             }));
         };
         this.processRawMonitoredVariables = (raw) => {
@@ -56,8 +56,8 @@ class DigitalTwinMainController {
             return new Promise((res, rej) => __awaiter(this, void 0, void 0, function* () {
                 try {
                     const stmtAssociatedSmartComponent = {
-                        sql: 'Insert INTO AssociatedSmartComponent(scName,associatedScUserId,scDtId) VALUES(?,?,?)',
-                        params: [associatedSmartComponent.scName, associatedSmartComponent.associatedScUserId, associatedSmartComponent.scDtId],
+                        sql: 'Insert INTO AssociatedSmartComponent(scName,associatedScUserId,scDtId, scAddress, scPort) VALUES(?,?,?,?,?)',
+                        params: [associatedSmartComponent.scName, associatedSmartComponent.associatedScUserId, associatedSmartComponent.scDtId, associatedSmartComponent.scAddress, associatedSmartComponent.scPort],
                         type: database_1.Operation.insert,
                         insertTable: model_1.Tables.associatedSmartComponent
                     };
@@ -150,7 +150,7 @@ class DigitalTwinMainController {
                         rej(response);
                         return;
                     }
-                    if (oldFunctionality.funcName === functionality.funcName) {
+                    if ((oldFunctionality.funcName === functionality.funcName)) {
                         res(response);
                         return;
                     }

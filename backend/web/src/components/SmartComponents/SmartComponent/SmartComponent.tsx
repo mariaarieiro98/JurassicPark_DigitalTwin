@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { useRouteMatch, match, Redirect } from 'react-router-dom'
 import { ConfirmActionStateLabel, ConfirmActionProps, ConfirmAction } from '../../templates/ConfirmAction/ConfirmAction'
 import { Navigator } from '../../templates/Navigator/Navigator'
@@ -11,7 +11,7 @@ import { useSmartComponentStyles } from '../style'
 import { BarChart } from '../../templates/Charts/Bars'
 import { GaugeChart } from '../../templates/Charts/Gauge'
 import { JPTable } from '../../templates/Table/JPTable'
-import {Settings, Error} from '@material-ui/icons'
+import { Settings, Error} from '@material-ui/icons'
 
 
 const FunctionBlockInstanceList = (props: {fbInstances: any[], update: (instances: any[]) => void}) => {

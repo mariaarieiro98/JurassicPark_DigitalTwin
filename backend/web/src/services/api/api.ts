@@ -133,14 +133,15 @@ export const fetchRequest = (route:Route, hasData:boolean=true, body: Object | u
     }
  
     return new Promise((res:Function, rej:Function) => {
-
+    
         fetch(route.path,options).then(result => {
-
+        
             if(result.ok)
                 result.json()
                     .then((json: RequestResponse) => hasData ? res(json.result) : res(json.state))
                     .catch(error =>  rej(unknowErrorState(error)))
             else {
+                console.log("entrei aqui")
                 result.json()
                     .then((json: RequestResponse) => rej(json.state))
                     .catch(error => rej(unknowErrorState(error)))

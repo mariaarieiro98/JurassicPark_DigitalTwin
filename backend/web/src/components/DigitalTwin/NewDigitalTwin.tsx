@@ -36,7 +36,6 @@ export const NewDigitalTwin = () => {
 
   const [dtName,setDtName] : [string,Function] = useState('')
   const [associatedSc,setAssociatedSc] : [SmartComponent[],Function] = useState([])
-  const [choosenAssociatedSc, setChoosenAssociatedSc] : [AssociatedSmartComponent[] ,Function] = useState([])
 
   let dtId = 1
   let idAssociatedSmartComponent = 1
@@ -55,7 +54,7 @@ export const NewDigitalTwin = () => {
   
   const buildAssociatedSmartComponent = (associatedSc : SmartComponent[], dtId: number, i: number) : AssociatedSmartComponent => ({
     scName: associatedSc[i].scName, scDtId: dtId,
-    associatedScUserId: 1
+    associatedScUserId: 1, scAddress: associatedSc[i].scAddress, scPort: associatedSc[i].scPort
   })
   
   const createDigitalTwinAction = () : Promise<string> => {
@@ -89,7 +88,7 @@ export const NewDigitalTwin = () => {
             i++
             createAssociatedSmartComponents(choosenAssociatedSc)
             .then((r:RequestResponseState) => {
-              idAssociatedSmartComponent= r.extra.lastInsertedId
+              idAssociatedSmartComponent = r.extra.lastInsertedId
             }) 
             .catch((e:RequestResponseState) => rej(e.msg))
             }
@@ -100,6 +99,8 @@ export const NewDigitalTwin = () => {
       })
     })
   }
+  
+  console.log("associatedSc, new DT:",associatedSc)
 
   if(redirectTo !== "") 
     return <Redirect to={redirectTo} push={true} />

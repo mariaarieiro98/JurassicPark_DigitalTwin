@@ -1,14 +1,11 @@
-import React, { useState, useCallback, useEffect } from 'react'
-import { TextField, Grid, Button, InputLabel, Select, MenuItem, FormControl } from '@material-ui/core'
-import { AssociatedSmartComponent, SmartComponent } from '../../model'
+import { useState, useCallback } from 'react'
+import { TextField, Grid, Button } from '@material-ui/core'
+import { SmartComponent } from '../../model'
 import { useFunctionBlockStyles } from '../FunctionBlocks/FunctionBlock/style'
 import { Done, Clear } from '@material-ui/icons'
 import { ConfirmActionProps, ConfirmActionStateLabel, ConfirmActionAction, ConfirmAction } from '../templates/ConfirmAction/ConfirmAction'
-import { AssociatedSmartComponentActions, SmartComponentActions } from '../../redux/actions'
+import { SmartComponentActions } from '../../redux/actions'
 import { useStore } from '../templates/Store/Store'
-import { getOrDownloadSmartComponents } from '../../utils/smartComponents'
-import { useMountEffect } from '../../utils/main'
-import { RequestResponseState } from '../../services/api/api'
 import { SmartComponentList } from './SmartComponent'
 
 const updateOnRemoveSmartComponent = (smartComponents: SmartComponent[], smartComponentToRemove: SmartComponent ) : SmartComponent[] => {
@@ -23,7 +20,6 @@ const updateOnRemoveSmartComponent = (smartComponents: SmartComponent[], smartCo
   return newSmartComponents
 
 }
-
 
 interface DigitalTwinFormProps {
 
@@ -152,6 +148,8 @@ export const DigitalTwinForm = (props: DigitalTwinFormProps) => {
       setAssociatedSc((prevSmartComponents: SmartComponent[]) =>  updateOnRemoveSmartComponent(prevSmartComponents,smartComponentToRemove))
 
   }, [setAssociatedSc])
+  
+  console.log("associatedSc:", associatedSc)
 
     return (
       <Grid className={classes.box} spacing={2} container direction="column" component="form">

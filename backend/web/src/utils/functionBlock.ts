@@ -1,5 +1,5 @@
 import { xml2js, Element } from "xml-js"
-import { FunctionBlock, InOutType, Variable, Event, EventVariable, FBCategory, Functionality } from "../model"
+import { FunctionBlock, InOutType, Variable, Event, EventVariable, FBCategory } from "../model"
 import { readLocalFile } from "./main"
 import { getFunctionBlocks, getFunctionBlockCategories } from "../services/api/function-block"
 import { RequestResponseState } from "../services/api/api"

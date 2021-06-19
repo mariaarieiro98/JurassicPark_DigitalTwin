@@ -335,40 +335,6 @@ digitalTwinModule.addRoute({
 
 digitalTwinModule.addRoute({
     
-    path: /^\/monitored-variable\/.+\/?$/,
-    method: 'get',
-    withAuthentication: false,
-    mountRoute: (api: Api) => {
-
-        api.app.get('/monitored-variable/:funcIdAssociated', async (req: FRequest, res: express.Response) => {
-
-            try {
-                
-                let response : RequestResponse = await checkParameters(['funcIdAssociated'],req.params)
-                await digitalTwinMainController.getMonitoredVariable(response,[{key: 'funcIdAssociated', value: req.params.funcIdAssociated}])
-                if(!response.getResult().length) {
-                    res.status(404)
-                    response.setErrorState('No monitoredVariable found with that funcId')
-                }
-                else
-                    response.setResult((response.getResult()[0])) //only one monitoredVariable
-                res.json(response.get())
-                
-            }
-    
-            catch(error) {
-                console.error(error)
-                res.status(400)
-                res.json(error)
-            }
-
-        })
-
-    }
-})
-
-digitalTwinModule.addRoute({
-    
     path: /^\/monitored-variable\/?$/,
     method: 'post',
     withAuthentication: false,

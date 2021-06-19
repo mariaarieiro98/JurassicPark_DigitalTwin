@@ -15,7 +15,7 @@ const functionBlockMainController_1 = require("../function-block/functionBlockMa
 const request_1 = require("../../utils/request");
 const digitalTwinMainController_1 = require("../digital-twin/digitalTwinMainController");
 class SmartComponentController {
-    constructor(address, port, id, name, type) {
+    constructor(address, port, id, name, type, diac4Port) {
         this.initializer = {
             data: () => {
                 return this.data;
@@ -48,6 +48,8 @@ class SmartComponentController {
                 this.data.scType = type;
                 this.data.scName = name;
                 this.data.scState = 'connected';
+                const diac4Port = yield this.opcuaController.readMainValue(opcuaClient_1.OPCUA_MONITORING_ITEM.diac4Port);
+                this.data.diac4Port = diac4Port;
                 this.notifyClientScUpdated();
             }
             catch (err) {
@@ -73,6 +75,7 @@ class SmartComponentController {
             scName: name !== null && name !== void 0 ? name : '',
             scType: type !== null && type !== void 0 ? type : '',
             scId: id,
+            diac4Port: diac4Port,
         };
     }
     buildHWNotifier(item, key) {
@@ -145,15 +148,17 @@ class SmartComponentController {
         this.notifyClientMonitoredVariableValueUpdated();
     }
     readMVandNotify() {
-        this.readMonitoredVariablesAndNotifyClient();
+        this.reconnectToOpcUa();
+    }
+    killSubsctiptions() {
+        this.opcuaController.opcUaClient.disconnect();
     }
     //Lê a informação relativa à variável VALUE
     readMonitoredVariablesAndNotifyClient() {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const monitoredVariables = (yield digitalTwinMainController_1.digitalTwinMainController.getMonitoredVariable(new request_1.RequestResponse())).getResult().map((monVar) => ({ idMonitoredVariable: monVar.idMonitoredVariable, monitoredVariableName: monVar.monitoredVariableName, scAssociated: monVar.scAssociated, fbAssociated: monVar.fbAssociated }));
-                let dinasore = this.namespace.slice(this.namespace.length - 1, this.namespace.length);
-                dinasore = "dinasore" + dinasore;
+                let dinasore = this.opcuaController.device;
                 let i = 0;
                 let monitoredVariablesName = [];
                 let monitoredVariablesFb = [];
@@ -180,7 +185,7 @@ class SmartComponentController {
                     }
                     i++;
                 }
-                const monitoredVariableValues = yield this.opcuaController.getAllMonitoredVariableInstances(afterFilterMonName, afterFilterMonFB);
+                const monitoredVariableValues = yield this.opcuaController.getAllMonitoredVariableInstances(afterFilterMonName, afterFilterMonFB, dinasore);
                 const promisesMVI = [];
                 monitoredVariableValues.forEach((element) => {
                     promisesMVI.push(digitalTwinMainController_1.digitalTwinMainController.getMonitoredVariable(new request_1.RequestResponse(), [{ key: 'monitoredVariableName', value: element.monitoredVariableName }]));

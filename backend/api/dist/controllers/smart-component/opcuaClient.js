@@ -14,6 +14,7 @@ var OPCUA_MONITORING_ITEM;
 (function (OPCUA_MONITORING_ITEM) {
     OPCUA_MONITORING_ITEM["scName"] = "SMART_OBJECT_NAME";
     OPCUA_MONITORING_ITEM["scDeviceType"] = "DEVICE_TYPE";
+    OPCUA_MONITORING_ITEM["diac4Port"] = "4DIAC_PORT";
     OPCUA_MONITORING_ITEM["state"] = "STATE";
     OPCUA_MONITORING_ITEM["hwMonitoring"] = "HardwareMonitoring";
 })(OPCUA_MONITORING_ITEM = exports.OPCUA_MONITORING_ITEM || (exports.OPCUA_MONITORING_ITEM = {}));
@@ -170,7 +171,7 @@ class OpcUaClient {
         //Cria mesmo a ligação a monitorizar
         this.monitoredVariableInstances[fb] = node_opcua_1.ClientMonitoredItem.create(this.subscription, itemToMonitor, OpcUaClient.monitoringParametersOptions, node_opcua_1.TimestampsToReturn.Both);
         this.monitoredVariableInstances[fb].on('changed', (dataValue) => {
-            //console.log("currentValue:", dataValue.value.value, fb, variable)
+            //console.log(fb, variable, dataValue.value.value)
             this.observers.forEach((observer) => {
                 observer.notifyMonitoredVariablesCurrentValueChanged(fb, dataValue.value.value, variable);
             });
@@ -201,10 +202,10 @@ class OpcUaClient {
             }
         }));
     }
-    getAllMonitoredVariableInstances(variable, fb) {
+    getAllMonitoredVariableInstances(variable, fb, dinasore) {
         return new Promise((res, rej) => __awaiter(this, void 0, void 0, function* () {
             try {
-                const variables = yield this.getMonitoredVariableInstances(FUNCTION_BLOCK_FOLDERS.SENSORS, variable, fb);
+                const variables = yield this.getMonitoredVariableInstances(FUNCTION_BLOCK_FOLDERS.SENSORS, variable, fb, dinasore);
                 res([...variables]);
             }
             catch (err) {
@@ -214,24 +215,20 @@ class OpcUaClient {
         }));
     }
     //Lê a informação relativa à variável VALUE
-    getMonitoredVariableInstances(folder, variables, fb) {
+    getMonitoredVariableInstances(folder, variables, fb, dinasore) {
         return new Promise((res, rej) => __awaiter(this, void 0, void 0, function* () {
             try {
-                //const deviceSetNodeId = `${OpcUaClient.NAME_SPACE};s=${this.device}:${folder}`
-                //const browseResult = await this.opcuaSession.browse(deviceSetNodeId);
                 const result = [];
                 let i = 0;
-                //for(const reference of browseResult.references) {
                 for (const variable of variables) {
                     const id = fb[i];
                     const currentValue = (yield this.opcuaSession.read({ nodeId: `${OpcUaClient.NAME_SPACE};s=${fb[i]}:Variables:${variable}` })).value.value;
-                    const monitoredVariableName = (yield this.opcuaSession.read({ nodeId: `${OpcUaClient.NAME_SPACE};s=${fb[i]}:Variables:${variable}`, attributeId: node_opcua_1.AttributeIds.DisplayName })).value.value.text;
+                    const monitoredVariableName = variable;
                     const sc = this.device;
                     this.addMonitoredVariableCurrentValueMonitorItem(fb[i], variable);
                     result.push({ id, currentValue, monitoredVariableName, sc });
                     i++;
                 }
-                //}
                 res(result);
             }
             catch (err) {

@@ -1,5 +1,5 @@
 {
-  "dinasore3@192.168.1.83:61493": [
-    "ENERGY_COSTS.READ"
+  "dinasoreGripper@192.168.0.3:61493": [
+    "CONTROL_GRIPPER.OPEN_GRIPPER"
   ]
 }
