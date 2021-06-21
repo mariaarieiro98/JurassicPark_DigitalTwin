@@ -259,11 +259,9 @@ export class OpcUaClient {
     
         const itemToMonitor : ReadValueIdLike= {nodeId: `${OpcUaClient.NAME_SPACE};s=${fb}:Variables:${variable}`}
 
-        //Cria mesmo a ligação a monitorizar
         this.monitoredVariableInstances[fb] = ClientMonitoredItem.create(this.subscription,itemToMonitor,OpcUaClient.monitoringParametersOptions,TimestampsToReturn.Both)
         
         this.monitoredVariableInstances[fb].on('changed', (dataValue:DataValue) => {
-            //console.log(fb, variable, dataValue.value.value)
           
             this.observers.forEach((observer: OpcuaClientObserver) => {
                 
